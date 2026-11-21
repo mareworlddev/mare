@@ -1676,6 +1676,24 @@ a {
   position: relative;
 }
 
+/* Chão da cena: o tufo de grama (1×8) balança atrás da Mare, com as pontas
+   aparecendo ao lado das patas. Fica atrás do botão e não pega o ponteiro. */
+.mare-pet-scene {
+  position: absolute;
+  left: 50%;
+  /* O quadro tem 30% de folga embaixo; descer isso põe o tufo no chão da cena. */
+  bottom: -65px;
+  z-index: 0;
+  display: flex;
+  justify-content: center;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.mare-pet-scene .mare-sprite {
+  filter: drop-shadow(0 6px 10px rgba(0, 14, 84, 0.12));
+}
+
 .mare-pet-zzz {
   position: absolute;
   right: -6px;
@@ -1778,6 +1796,8 @@ a {
 }
 
 .mare-pet-drop {
+  position: relative;
+  z-index: 1;
   touch-action: none;
   user-select: none;
 }

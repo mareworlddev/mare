@@ -33,7 +33,7 @@ export const MARE_SPRITES: Record<
 };
 
 /** Folhas do pet ao lado do chat: cada uma com sua grade e proporção de quadro. */
-export type MarePetSheet = 'watch' | 'chat' | 'outros' | 'eat' | 'drink';
+export type MarePetSheet = 'watch' | 'chat' | 'outros' | 'eat' | 'drink' | 'scenery';
 
 export const MARE_PET_SHEETS: Record<
   MarePetSheet,
@@ -44,6 +44,8 @@ export const MARE_PET_SHEETS: Record<
   outros: { src: '/mare/opt/sprite-sheet-5x8-outros-comportamentos.png', cols: 8, rows: 5, frameRatio: 1 },
   eat: { src: '/mare/opt/sprite-sheet-1x8-comendo-maca.png', cols: 8, rows: 1, frameRatio: 512 / 1024 },
   drink: { src: '/mare/opt/sprite-sheet-1x8-bebendo-agua.png', cols: 8, rows: 1, frameRatio: 512 / 1024 },
+  /** Tufo de grama que fica no chão, atrás da Mare na sidebar (1×8, balançando). */
+  scenery: { src: '/mare/opt/ambiente-mare.png', cols: 8, rows: 1, frameRatio: 512 / 1024 },
 };
 
 /** Linha animada de uma folha: quadros, cadência e se repete. */
