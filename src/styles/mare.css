@@ -1,0 +1,59 @@
+/* ==========================================================================
+   Agente Mare — identidade visual
+   Paleta: #000e54 · #0553af · #f7f7f7
+   Tipografia: Special Elite (títulos) · Quantico (interface)
+   ========================================================================== */
+
+.mare-shell,
+.mare-ws-shell {
+  --mare-navy: #000e54;
+  --mare-blue: #0553af;
+  --mare-blue-soft: #eaf2ff;
+  --mare-icon-color: #000e54;
+  --mare-bg: #f7f7f7;
+  --mare-white: #ffffff;
+  --mare-ink: #111a3a;
+  --mare-muted: #66718e;
+  color: var(--mare-ink);
+  font-family: 'Quantico', ui-sans-serif, system-ui, sans-serif;
+}
+
+.mare-icon-plate,
+.mare-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  border-radius: 999px;
+  background: #fff;
+  border: 1px solid rgba(0, 14, 84, 0.12);
+  box-shadow: 0 8px 20px -14px rgba(0, 14, 84, 0.7);
+}
+
+/* Foto da Mare (foto-perfil.png): preenche o círculo sem deformar. */
+img.mare-avatar {
+  object-fit: cover;
+  object-position: center;
+}
+
+.mare-icon-glyph {
+  display: block;
+  background-color: var(--mare-icon-color, #000e54);
+  -webkit-mask-image: url('/logos/mare.svg');
+  mask-image: url('/logos/mare.svg');
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
+.mare-background {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.45;
+  overflow: hidden;
+  pointer-events: none;
+}

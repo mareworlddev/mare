@@ -1,0 +1,17 @@
+{
+  "name": "Agente Mare",
+  "short_name": "Mare",
+  "description": "Agente de ferramentas e skills para o dia a dia.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f7f7",
+  "theme_color": "#000e54",
+  "icons": [
+    {
+      "src": "/logos/mare.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
