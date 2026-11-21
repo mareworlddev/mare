@@ -1,13 +1,5 @@
 /** Utilitários de streaming SSE (OpenAI-compatible) usados pelos provedores de chat. */
 
-export interface ParsedStreamDelta {
-  content: string;
-  reasoning: string;
-  toolCalls: any[];
-  finishReason: string;
-  usage?: Record<string, unknown>;
-}
-
 /**
  * Lê um corpo SSE e entrega cada `data:` já convertido em objeto.
  * Ignora comentários/heartbeats e o marcador final `[DONE]`.

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { MARE_CHAT_ROWS, MARE_OUTROS_ROWS, type MareSpriteRow } from '@/lib/mare/constants';
 import { AnimatedPetSprite, PetSprite, watchColumn } from './MareSprite';
 

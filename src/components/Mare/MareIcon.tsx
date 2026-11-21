@@ -60,7 +60,6 @@ export function MareIcon({
 
 /** Foto da Mare (foto-perfil.png, versão otimizada): é o rosto dela no agente. */
 export const MARE_PHOTO_SRC = '/mare/opt/foto-perfil.png';
-export const MARE_PHOTO_SRC_FULL = '/mare/foto-perfil.png';
 
 export function MareAvatar({
   size = 40,

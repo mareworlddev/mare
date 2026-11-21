@@ -8,7 +8,7 @@ const isRelativeHref = (value: string) =>
   value.startsWith('./') ||
   value.startsWith('../');
 
-export function sanitizeUrl(value?: string | null): string | undefined {
+function sanitizeUrl(value?: string | null): string | undefined {
   if (!value || typeof value !== 'string') return undefined;
   // Recupera trechos colados acidentalmente como #https://... e preserva âncoras internas.
   const trimmed = value.trim().replace(/^#+\s*(?=https?:\/\/)/i, '');
@@ -34,17 +34,3 @@ export function isSafeExternalUrl(value?: string | null): boolean {
   }
 }
 
-export function safeHref(value?: string | null, fallback = '#'): string {
-  return sanitizeUrl(value) || fallback;
-}
-
-export function getSafeExternalLinkProps(value?: string | null) {
-  const href = sanitizeUrl(value);
-  if (!href) return { href: undefined, target: undefined, rel: undefined };
-  const external = isSafeExternalUrl(href);
-  return {
-    href,
-    target: external ? '_blank' : undefined,
-    rel: external ? 'noopener noreferrer' : undefined,
-  };
-}

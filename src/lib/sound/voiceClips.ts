@@ -13,16 +13,6 @@ export type VoiceClipName = keyof typeof voiceClips;
 const cache = new Map<VoiceClipName, HTMLAudioElement>();
 let current: HTMLAudioElement | null = null;
 
-export function stopVoiceClip() {
-  if (current) {
-    try {
-      current.pause();
-    } catch {
-      // ignora
-    }
-  }
-}
-
 /** Toca uma fala interrompendo a anterior; falhas de autoplay são silenciosas. */
 export function playVoiceClip(name: VoiceClipName, volume = 0.7) {
   if (typeof window === 'undefined') return;

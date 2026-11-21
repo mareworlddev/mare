@@ -210,123 +210,6 @@ a {
   margin-top: 34px;
 }
 
-.landing-hero-note {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: 22px;
-  font-family: 'Quantico', sans-serif;
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  color: var(--mare-muted);
-}
-
-.landing-hero-note i {
-  width: 7px;
-  height: 7px;
-  border-radius: 99px;
-  background: #2fad72;
-  box-shadow: 0 0 0 4px rgba(47, 173, 114, 0.14);
-}
-
-.landing-visual {
-  position: relative;
-  min-height: 420px;
-}
-
-.landing-visual-frame {
-  position: relative;
-  overflow: hidden;
-  border-radius: 30px;
-  border: 1px solid rgba(0, 14, 84, 0.08);
-  background: #ffffff;
-  box-shadow: 0 24px 48px -36px rgba(0, 14, 84, 0.4);
-  padding: 26px;
-}
-
-.landing-visual-top {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-family: 'Quantico', sans-serif;
-  font-size: 10px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--mare-muted);
-}
-
-.landing-visual-top::before {
-  content: '';
-  width: 7px;
-  height: 7px;
-  border-radius: 99px;
-  background: #d5deef;
-}
-
-.landing-visual-media {
-  position: relative;
-  margin-top: 18px;
-  border-radius: 20px;
-  overflow: hidden;
-  background: #fff;
-  aspect-ratio: 4 / 3;
-}
-
-.landing-visual-media img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.landing-visual-caption {
-  position: absolute;
-  inset: auto 0 0 0;
-  padding: 34px 20px 18px;
-  background: linear-gradient(transparent, rgba(0, 14, 84, 0.82));
-  color: #fff;
-  font-family: 'Special Elite', Georgia, serif;
-  font-size: 17px;
-  letter-spacing: 0.02em;
-}
-
-.landing-strip {
-  border-block: 1px solid var(--mare-line);
-  background: #fff;
-}
-
-.landing-strip-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0;
-}
-
-.landing-strip-item {
-  padding: 28px 26px;
-  border-right: 1px solid var(--mare-line);
-}
-
-.landing-strip-item:last-child {
-  border-right: 0;
-}
-
-.landing-strip-item strong {
-  display: block;
-  font-family: 'Special Elite', Georgia, serif;
-  font-size: 24px;
-  color: var(--mare-navy);
-}
-
-.landing-strip-item span {
-  display: block;
-  margin-top: 6px;
-  font-family: 'Quantico', sans-serif;
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--mare-muted);
-}
-
 .landing-section {
   padding: 96px 0;
 }
@@ -398,40 +281,6 @@ a {
   color: var(--mare-muted);
 }
 
-.landing-section-tight {
-  padding-top: 0;
-}
-
-.landing-cards-two {
-  grid-template-columns: repeat(2, 1fr);
-}
-
-.landing-demo {
-  display: grid;
-  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
-  gap: 44px;
-  align-items: center;
-  border-radius: 34px;
-  padding: 52px;
-  background: var(--mare-navy);
-  color: #fff;
-}
-
-.landing-demo h2 {
-  margin: 14px 0 0;
-  font-family: 'Special Elite', Georgia, serif;
-  font-size: clamp(30px, 3.5vw, 42px);
-  line-height: 1.2;
-}
-
-.landing-demo p {
-  margin: 16px 0 0;
-  font-family: 'Quantico', sans-serif;
-  font-size: 14px;
-  line-height: 1.75;
-  color: rgba(255, 255, 255, 0.76);
-}
-
 .landing-chat {
   border-radius: 20px;
   background: #fff;
@@ -444,68 +293,6 @@ a {
   font-family: 'Quantico', sans-serif;
   font-size: 12.5px;
   line-height: 1.7;
-}
-
-.landing-chat-row {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  margin-bottom: 16px;
-}
-
-.landing-chat-row:last-child {
-  margin-bottom: 0;
-}
-
-.landing-chat-row.is-user {
-  justify-content: flex-end;
-}
-
-.landing-bubble {
-  max-width: 85%;
-  border-radius: 14px;
-  padding: 12px 15px;
-  font-family: 'Quantico', sans-serif;
-  font-size: 12px;
-  line-height: 1.6;
-}
-
-.landing-chat-row.is-user .landing-bubble {
-  background: var(--mare-navy);
-  color: #fff;
-  border-bottom-right-radius: 4px;
-}
-
-.landing-chat-row.is-mare .landing-bubble {
-  background: var(--mare-blue-soft);
-  color: var(--mare-navy);
-  border-bottom-left-radius: 4px;
-}
-
-.landing-chat-label {
-  display: block;
-  margin-bottom: 4px;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  opacity: 0.65;
-}
-
-.landing-chat-sources {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 10px;
-}
-
-.landing-chat-sources span {
-  border-radius: 999px;
-  padding: 4px 9px;
-  background: #fff;
-  border: 1px solid var(--mare-line);
-  font-size: 9px;
-  color: var(--mare-blue);
 }
 
 .landing-final {
@@ -551,36 +338,13 @@ a {
   color: var(--mare-muted);
 }
 
-/* Página do agente: o shell da Mare ocupa toda a altura disponível. */
-.mare-page {
-  height: 100dvh;
-  min-height: 560px;
-}
-
 @media (max-width: 980px) {
-  .landing-hero-grid,
-  .landing-demo {
+  .landing-hero-grid {
     grid-template-columns: 1fr;
-  }
-
-  .landing-visual {
-    min-height: 0;
   }
 
   .landing-cards {
     grid-template-columns: repeat(2, 1fr);
-  }
-
-  .landing-strip-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  .landing-strip-item:nth-child(2) {
-    border-right: 0;
-  }
-
-  .landing-strip-item:nth-child(-n + 2) {
-    border-bottom: 1px solid var(--mare-line);
   }
 }
 
@@ -614,11 +378,6 @@ a {
   .landing-section,
   .landing-final {
     padding-block: 68px;
-  }
-
-  .landing-demo {
-    padding: 30px 22px;
-    border-radius: 24px;
   }
 
   .landing-footer-inner {
@@ -811,12 +570,6 @@ a {
   }
 }
 
-.mare-ws-header-actions {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
 .mare-ws-thread {
   position: relative;
   flex: 1 1 auto;
@@ -851,7 +604,11 @@ a {
 }
 
 .mare-ws-empty {
-  padding-top: 22px;
+  /* Mesma largura do cartão do prompt: o cap de 900px do composer
+     menos o respiro lateral de 24px de cada lado. Centrado. */
+  width: min(100%, calc(900px - 48px));
+  margin-inline: auto;
+  padding-top: clamp(24px, 8vh, 72px);
 }
 
 .mare-ws-message {
@@ -1260,7 +1017,6 @@ a {
   max-height: none;
 }
 
-
 .mare-ws-collapse-toggle {
   display: inline-flex;
   align-items: center;
@@ -1317,8 +1073,59 @@ a {
 }
 
 .mare-ws-collapse-code .mare-ws-collapse-label {
+  /* O nome da linguagem é o que a barra existir para dizer: ocupa o espaço
+     que sobrar, encolhe por último e corta com reticências, nunca some. */
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   padding: 2px 0;
   line-height: 1.6;
+}
+
+/* Grupo da barra: copiar e recolher lado a lado, com folga entre eles. */
+.mare-ws-collapse-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* Botão copiar: mesma família do recolher; pode encolher o texto em furos
+   estreitos, mas os dois botões seguem separados. */
+.mare-ws-code-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  padding: 3px 9px;
+  border: 1px solid rgba(0, 14, 84, 0.14);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #0553af;
+  font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.mare-ws-code-copy:hover {
+  background: #eaf2ff;
+  border-color: rgba(5, 83, 175, 0.4);
+}
+
+.mare-ws-code-copy:focus-visible {
+  outline: 2px solid #0553af;
+  outline-offset: 2px;
+}
+
+.mare-bubble-user .mare-ws-code-copy {
+  border-color: rgba(0, 14, 84, 0.14);
+  background: #ffffff;
+  color: #0553af;
 }
 
 .mare-ws-collapse-code .mare-ws-collapse-toggle {
@@ -1546,39 +1353,6 @@ a {
 /* Respiro do campo em relação à borda inferior (e à barra do sistema no mobile). */
 .mare-ws-composer-wrap form {
   margin-bottom: max(10px, env(safe-area-inset-bottom));
-}
-
-.mare-ws-composer-row {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
-}
-
-.mare-ws-composer-field {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.mare-ws-stop {
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border: 0;
-  border-radius: 12px;
-  background: #000e54;
-  color: #fff;
-  cursor: pointer;
-}
-
-.mare-ws-hint {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin: 8px 2px 0;
-  font-size: 10px;
-  letter-spacing: 0.05em;
-  color: #66718e;
 }
 
 .mare-ws-error {
@@ -1845,8 +1619,14 @@ a {
   .mare-ws-composer-wrap {
     padding-inline: 12px;
   }
-}
 
+  /* No mobile o respiro lateral do thread (14px) cobre o do composer (12px);
+     o estado vazio volta a seguir a largura do thread, alinhado com o campo. */
+  .mare-ws-empty {
+    width: 100%;
+    padding-top: 32px;
+  }
+}
 
 /* Pet da Mare: na sidebar, acima das preferências; arrastável pela tela. */
 .mare-pet-dock {

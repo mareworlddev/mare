@@ -1,9 +1,6 @@
 /** Formatos que a Mare consegue ler e mandar como contexto para o modelo. */
 export type AttachmentKind = 'pdf' | 'doc' | 'sheet' | 'slides' | 'text';
 
-export const ATTACHMENT_ACCEPT =
-  '.pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.txt,.md';
-
 export const ATTACHMENT_MAX_BYTES = 8 * 1024 * 1024;
 /** Quanto texto de um documento entra na conversa. */
 const MAX_CHARS = 7000;

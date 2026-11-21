@@ -1,19 +1,7 @@
-import { DEFAULT_MARE_AI_MODEL, isMareAiModelId, type MareAiModelId } from '@/constants/aiModels';
-
-export type TextChatMessage = {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
-};
-
 export const MARE_IMAGE_MODEL = 'microsoft/mai-image-2.7-flash';
 
 export function getPollinationsKey() {
   return process.env.POLLI_KEY || '';
-}
-
-export function normalizeMareAiModel(value: unknown): MareAiModelId {
-  const model = String(value || '');
-  return isMareAiModelId(model) ? model : DEFAULT_MARE_AI_MODEL;
 }
 
 /** URL pública de uma imagem gerada pelo modelo de imagem da Pollinations. */

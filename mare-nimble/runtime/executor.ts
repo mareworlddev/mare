@@ -1,4 +1,4 @@
-import { MARE_NIMBLE_ORCHESTRATOR, MARE_NIMBLE_WRITER } from '../../src/lib/mare/constants';
+import { MARE_NIMBLE_ORCHESTRATOR } from '../../src/lib/mare/constants';
 import { firecrawlScrape, firecrawlSearch } from '../../src/lib/mare/firecrawl';
 import { providerChat } from '../../src/lib/mare/llm';
 import { mareWarn, previewText } from '../../src/lib/mare/log';

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { MARE_PET_SHEETS, MARE_SPRITES, type MarePetSheet } from '@/lib/mare/constants';
 import type { MareSpriteState } from '@/lib/mare/types';
 

@@ -38,14 +38,6 @@ export function mareWarn(scope: MareLogScope, message: string, data?: unknown) {
   console.warn(`${prefix(scope)} ${message}`, data);
 }
 
-export function mareError(scope: MareLogScope, message: string, data?: unknown) {
-  if (data === undefined) {
-    console.error(`${prefix(scope)} ${message}`);
-    return;
-  }
-  console.error(`${prefix(scope)} ${message}`, data);
-}
-
 /** Cronômetro simples para medir cada etapa do agente. */
 export function mareTimer(scope: MareLogScope, label: string) {
   const startedAt = Date.now();

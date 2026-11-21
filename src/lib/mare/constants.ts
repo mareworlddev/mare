@@ -1,15 +1,11 @@
 import type {
-  MareEffort,
   MareSettings,
   MareSkillId,
   MareSpriteState,
   MareToolId,
 } from './types';
 
-export const MARE_AGENT_ID = 'lighting-mare';
 export const MARE_NAME = 'Mare';
-export const MARE_DISPLAY_NAME = 'Mare';
-export const MARE_SUBTITLE = 'agente de ferramentas e skills';
 
 /** Modelo próprio: orquestra com Qwen na Cerebras e escreve com GPT-OSS na Pollinations. */
 export const MARE_NIMBLE_MODEL = 'mare-nimble';
@@ -24,22 +20,6 @@ export const MARE_STATUS = {
   done: ['Chegando ao destino', 'Trabalho concluído'],
   error: ['Tropeçou na pedra', 'O caminho fechou', 'Precisamos ajustar o passo'],
 } satisfies Record<string, string[]>;
-
-export const MARE_STATUS_FOR_SPRITE: Record<MareSpriteState, string> = {
-  idle: 'Marchando ao objetivo',
-  walk: 'Bufar para continuar',
-  rear: 'Chegando ao destino',
-  graze: 'Pastando no campo',
-  sleep: 'Dormindo no estábulo',
-};
-
-/** Folha do loader e do estado do stream: 6×6 (ações do chat), uma linha por estado.
- * Servida na versão otimizada em /mare/opt (metade da resolução, ~10× menor). */
-export const MARE_SPRITE_SHEET = {
-  src: '/mare/opt/sprite-sheet-6x6-acoes-chat.png',
-  columns: 6,
-  rows: 6,
-} as const;
 
 export const MARE_SPRITES: Record<
   MareSpriteState,

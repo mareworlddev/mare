@@ -69,7 +69,6 @@ import type {
 } from '@/lib/mare/types';
 
 const STORAGE_KEY = 'agentmare-workspace:v2';
-const STATE_KEY = 'agentmare-state';
 
 function uid(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;

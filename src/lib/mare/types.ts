@@ -12,8 +12,6 @@ export type MareSkillId =
 
 export type MareToolId = 'web_search' | 'read_page';
 
-export type MareMentionId = 'web' | 'ferramentas' | 'skills';
-
 export type MareEffort = 'Minimal' | 'Low' | 'Medium' | 'High' | 'Extra high' | 'Ultra';
 
 export interface MareSource {
@@ -117,8 +115,5 @@ export type MareStreamEvent =
   | { type: 'done' };
 
 export type MareSpriteState = 'idle' | 'walk' | 'rear' | 'graze' | 'sleep';
-
-/** Fase da geração da resposta, usada para escolher a linha da folha 6×6 / 5×8. */
-export type MareGenerationPhase = 'thinking' | 'tool' | 'writing' | 'wrapping';
 
 export type MareFeedKind = 'eat' | 'drink';
