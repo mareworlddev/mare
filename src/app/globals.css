@@ -1338,6 +1338,23 @@ a {
   margin-top: 12px;
 }
 
+/* Recado no lugar do cartão de ferramenta quando a imagem já está na conversa. */
+.mare-ws-image-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  font-family: 'Quantico', sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  color: var(--mare-muted);
+}
+
+.mare-ws-image-note svg {
+  flex: 0 0 auto;
+  color: var(--mare-blue);
+}
+
 /* Respiro abaixo do campo: o compositor fecha a tela com a margem. */
 .mare-ws-composer-wrap {
   width: min(100%, 900px);

@@ -1,13 +1,18 @@
 'use client';
 
 import { DitherField } from '@/components/ui/dither-field';
+import { Sparkles } from 'lucide-react';
 
 /**
  * Cartão de geração de imagem: o DitherField em variação de card
  * (padrão do próprio componente), com o pedido no pé para o usuário
  * saber o que está sendo desenhado.
+ *
+ * Com `src`, o cartão também é quem segura a cena: carrega a imagem por
+ * baixo dos panos e só avisa `onReady` quando ela está pronta, para o
+ * cartão sair exatamente quando a imagem pode aparecer.
  */
-export function MareImageGenerating({ prompt }: { prompt?: string }) {
+export function MareImageGenerating({ prompt, src, onReady }: { prompt?: string; src?: string; onReady?: () => void }) {
   return (
     <DitherField
       pattern="glow"
@@ -23,6 +28,27 @@ export function MareImageGenerating({ prompt }: { prompt?: string }) {
       <p className="relative mt-0.5 line-clamp-2 text-[11.5px] leading-snug text-mare-muted">
         {prompt || 'Compondo a cena'}
       </p>
+      {src ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={src}
+          alt=""
+          aria-hidden="true"
+          className="pointer-events-none absolute h-px w-px opacity-0"
+          onLoad={onReady}
+          onError={onReady}
+        />
+      ) : null}
     </DitherField>
+  );
+}
+
+/** Recado no lugar do cartão de ferramenta quando a imagem já está na conversa. */
+export function MareImageNote() {
+  return (
+    <p className="mare-ws-image-note">
+      <Sparkles size={13} strokeWidth={2} aria-hidden="true" />
+      A Mare fez a sua imagem
+    </p>
   );
 }

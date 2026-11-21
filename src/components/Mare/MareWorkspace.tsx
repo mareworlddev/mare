@@ -42,7 +42,7 @@ import { AnimatedPetSprite } from './MareSprite';
 import { MarePet } from './MarePet';
 import { CollapsibleText, markdownComponents, markdownRehypePlugins } from './MareMarkdown';
 import { MareComposer } from './MareComposer';
-import { MareImageGenerating } from './MareImageGenerating';
+import { MareImageGenerating, MareImageNote } from './MareImageGenerating';
 import type { PendingAttachment } from './MareAttachments';
 import { DitherField } from '@/components/ui/dither-field';
 
@@ -69,6 +69,18 @@ import type {
 } from '@/lib/mare/types';
 
 const STORAGE_KEY = 'agentmare-workspace:v2';
+
+/** Marca do markdown de uma imagem que a própria Mare gerou (proxy interno). */
+const GENERATED_IMAGE = /!\[[^\]]*\]\((\/api\/mare\/image\?[^)\s]+)\)/;
+
+function generatedImageUrl(content: string) {
+  return GENERATED_IMAGE.exec(content)?.[1];
+}
+
+/** Sem a imagem: o cartão de carregamento fica no lugar dela até a arte chegar. */
+function withoutGeneratedImage(content: string) {
+  return content.replace(GENERATED_IMAGE, '').replace(/\n{3,}/g, '\n\n').trimEnd();
+}
 
 function uid(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -221,6 +233,8 @@ export default function MareWorkspace() {
   const [celebrate, setCelebrate] = useState(0);
   const [sources, setSources] = useState<MareSource[]>([]);
   const [toolCalls, setToolCalls] = useState<MareToolCall[]>([]);
+  /** Imagens geradas que já carregaram: até lá quem aparece é o cartão. */
+  const [loadedImages, setLoadedImages] = useState<Record<string, true>>({});
   const [streamStartedAt, setStreamStartedAt] = useState<number | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
@@ -732,7 +746,13 @@ export default function MareWorkspace() {
           ) : (
             <Conversation className="h-full" threshold={48}>
               <div className="mare-ws-messages">
-                {messages.map((message, index) => (
+                {messages.map((message, index) => {
+                  const imageUrl = message.role === 'assistant' ? generatedImageUrl(message.content) : undefined;
+                  const imageCallOfMessage = message.toolCalls?.find((call) => call.name === 'generate_image');
+                  const imagePromptOfMessage =
+                    typeof imageCallOfMessage?.input?.prompt === 'string' ? imageCallOfMessage.input.prompt : '';
+                  const imageReady = Boolean(imageUrl && loadedImages[message.id]);
+                  return (
                   <div className="mare-ws-message" key={message.id}>
                     <MessageBubble
                       role={message.role}
@@ -769,16 +789,26 @@ export default function MareWorkspace() {
                       ) : null}
                       {message.role === 'assistant' ? (
                         <CollapsibleText limit={640}>
-                          <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={markdownRehypePlugins} components={markdownComponents}>{message.content}</ReactMarkdown>
+                          <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={markdownRehypePlugins} components={markdownComponents}>
+                            {imageUrl && !imageReady ? withoutGeneratedImage(message.content) : message.content}
+                          </ReactMarkdown>
                         </CollapsibleText>
                       ) : (
                         <div className="mare-ws-markdown">
                           <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={markdownRehypePlugins} components={markdownComponents}>{message.content}</ReactMarkdown>
                         </div>
                       )}
+                      {imageUrl && !imageReady ? (
+                        <MareImageGenerating
+                          prompt={imagePromptOfMessage}
+                          src={imageUrl}
+                          onReady={() => setLoadedImages((previous) => ({ ...previous, [message.id]: true }))}
+                        />
+                      ) : null}
+                      {imageUrl && imageReady ? <MareImageNote /> : null}
                       {message.toolCalls?.length ? (
                         <div className="mare-ws-tools">
-                          {message.toolCalls.map((call) => (
+                          {message.toolCalls.filter((call) => call.name !== 'generate_image').map((call) => (
                             <ToolCallCard
                               key={call.id}
                               name={call.name}
@@ -798,7 +828,8 @@ export default function MareWorkspace() {
                       ) : null}
                     </MessageBubble>
                   </div>
-                ))}
+                  );
+                })}
 
                 {isSending ? (
                   <div className="mare-ws-message">
@@ -823,7 +854,7 @@ export default function MareWorkspace() {
                       ) : null}
                       {toolCalls.length ? (
                         <div className="mare-ws-tools">
-                          {toolCalls.map((call) => (
+                          {toolCalls.filter((call) => call.name !== 'generate_image').map((call) => (
                             <ToolCallCard
                               key={call.id}
                               name={call.name}
