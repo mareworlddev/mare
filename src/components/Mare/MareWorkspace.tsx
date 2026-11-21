@@ -40,6 +40,7 @@ import { MareAvatar } from './MareIcon';
 import { MareBackground } from './MareBackground';
 import { AnimatedPetSprite } from './MareSprite';
 import { MarePet } from './MarePet';
+import { MarePlayground } from './MarePlayground';
 import { CollapsibleText, markdownComponents, markdownRehypePlugins } from './MareMarkdown';
 import { MareComposer } from './MareComposer';
 import { MareImageGenerating, MareImageNote } from './MareImageGenerating';
@@ -237,6 +238,7 @@ export default function MareWorkspace() {
   const [loadedImages, setLoadedImages] = useState<Record<string, true>>({});
   const [streamStartedAt, setStreamStartedAt] = useState<number | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [playgroundOpen, setPlaygroundOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [error, setError] = useState('');
@@ -977,8 +979,16 @@ export default function MareWorkspace() {
           <h3>Interface</h3>
           <label><input type="checkbox" checked={settings.animations} onChange={(event) => updateSettings({ animations: event.target.checked })} /> Animações</label>
           <label><input type="checkbox" checked={settings.webSearch} onChange={(event) => updateSettings({ webSearch: event.target.checked })} /> Pesquisa na web</label>
+
+          <h3>Playground</h3>
+          <button type="button" className="mare-ws-settings-playground" onClick={() => setPlaygroundOpen(true)}>
+            Abrir playground
+            <span>Monte com a Mare e saia pelo campo</span>
+          </button>
         </aside>
       ) : null}
+
+      {playgroundOpen ? <MarePlayground onClose={() => setPlaygroundOpen(false)} /> : null}
     </main>
   );
 }

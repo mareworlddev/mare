@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatedPetSprite, PetSprite, watchColumn } from './MareSprite';
+import { MareWeather } from './MareWeather';
 import { MARE_CHAT_ROWS, MARE_FEED_SHEETS, MARE_OUTROS_ROWS, MARE_WATCH_COLUMNS } from '@/lib/mare/constants';
 import type { MareFeedKind } from '@/lib/mare/types';
 
@@ -359,6 +360,7 @@ export function MarePet({ active, paused = false, celebrateKey, onFeed, onRear }
       </div>
 
       <div className="mare-pet-stage" ref={stageRef}>
+        <MareWeather paused={paused} />
         {/* Chão da cena: o tufo de grama balança atrás da Mare, dentro da sidebar.
             Solta pela tela, ela viaja sozinha — a grama fica no lugar dela. */}
         {pos ? null : (

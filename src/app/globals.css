@@ -1522,6 +1522,37 @@ a {
   border-color: rgba(5, 83, 175, 0.4);
 }
 
+.mare-ws-settings-playground {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  margin: 2px 0 6px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid rgba(0, 14, 84, 0.14);
+  border-radius: 10px;
+  background: #ffffff;
+  color: #0553af;
+  font-family: 'Quantico', sans-serif;
+  font-size: 11.5px;
+  letter-spacing: 0.03em;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.mare-ws-settings-playground span {
+  font-size: 10.5px;
+  letter-spacing: 0;
+  color: var(--mare-muted);
+}
+
+.mare-ws-settings-playground:hover {
+  background: #eaf2ff;
+  border-color: rgba(5, 83, 175, 0.4);
+}
+
 /* Volume: rótulo, porcentagem e um trilho fino com preenchimento azul. */
 .mare-ws-volume {
   padding: 7px 0 9px;
@@ -1694,6 +1725,100 @@ a {
   filter: drop-shadow(0 6px 10px rgba(0, 14, 84, 0.12));
 }
 
+/* Clima da cena: vento, chuva ou sol, sorteado uma vez por visita. */
+.mare-weather {
+  position: absolute;
+  left: 50%;
+  bottom: -8px;
+  z-index: 2;
+  width: 200px;
+  height: 210px;
+  transform: translateX(-50%);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.mare-weather.is-paused *,
+.mare-weather.is-paused {
+  animation-play-state: paused;
+}
+
+.mare-weather-drop {
+  position: absolute;
+  left: calc(4% + var(--i) * 12%);
+  top: -18px;
+  width: 2px;
+  height: 15px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, rgba(88, 124, 190, 0) 0%, rgba(88, 124, 190, 0.7) 100%);
+  animation: mare-weather-fall calc(0.9s + var(--i) * 0.07s) linear infinite;
+  animation-delay: calc(var(--i) * -0.17s);
+}
+
+@keyframes mare-weather-fall {
+  0% { transform: translateY(0) rotate(10deg); opacity: 0; }
+  12% { opacity: 1; }
+  100% { transform: translateY(232px) rotate(10deg); opacity: 0.85; }
+}
+
+.mare-weather-gust {
+  position: absolute;
+  left: -60px;
+  top: calc(20% + var(--i) * 26%);
+  width: 54px;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(120, 140, 180, 0), rgba(120, 140, 180, 0.65));
+  animation: mare-weather-gust 3.4s linear infinite;
+  animation-delay: calc(var(--i) * -1.15s);
+}
+
+@keyframes mare-weather-gust {
+  0% { transform: translate(0, 0); opacity: 0; }
+  18% { opacity: 1; }
+  100% { transform: translate(258px, -12px); opacity: 0; }
+}
+
+.mare-weather-glow {
+  position: absolute;
+  left: 50%;
+  top: 26%;
+  width: 240px;
+  height: 240px;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(255, 206, 128, 0.5), rgba(255, 206, 128, 0) 65%);
+  animation: mare-weather-breathe 7s ease-in-out infinite;
+}
+
+@keyframes mare-weather-breathe {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 0.95; }
+}
+
+.mare-weather-ray {
+  position: absolute;
+  left: 50%;
+  top: 4%;
+  width: 2px;
+  height: 172px;
+  transform-origin: 50% 0;
+  transform: rotate(calc(-26deg + var(--i) * 26deg));
+  background: linear-gradient(180deg, rgba(255, 196, 110, 0.5), rgba(255, 196, 110, 0));
+  animation: mare-weather-ray 6s ease-in-out infinite;
+  animation-delay: calc(var(--i) * -1.4s);
+}
+
+@keyframes mare-weather-ray {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 0.6; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mare-weather {
+    display: none;
+  }
+}
+
 .mare-pet-zzz {
   position: absolute;
   right: -6px;
@@ -1853,6 +1978,112 @@ a {
   .mare-pet-dock .mare-sprite {
     animation: none;
   }
+}
+
+/* Playground: a Mare montada passeia pelo campo, aberto pelas preferências. */
+.mare-playground {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(8, 14, 32, 0.42);
+  backdrop-filter: blur(6px);
+}
+
+.mare-playground-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(600px, 100%);
+  max-height: calc(100vh - 40px);
+  padding: 16px;
+  border-radius: 16px;
+  background: var(--mare-white);
+  box-shadow: 0 24px 60px rgba(6, 16, 44, 0.28);
+  overflow: auto;
+}
+
+.mare-playground-card:focus {
+  outline: none;
+}
+
+.mare-playground-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.mare-playground-head h2 {
+  margin: 0;
+  font-family: 'Quantico', sans-serif;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  color: var(--mare-ink);
+}
+
+.mare-playground-head p {
+  margin: 3px 0 0;
+  font-size: 12px;
+  color: var(--mare-muted);
+}
+
+.mare-playground-head button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(0, 14, 84, 0.14);
+  border-radius: 8px;
+  background: var(--mare-white);
+  color: var(--mare-muted);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.mare-playground-head button:hover {
+  background: var(--mare-blue-soft);
+  color: var(--mare-blue);
+}
+
+.mare-playground-field {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 7 / 5;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #93a35e;
+  box-shadow: inset 0 0 0 1px rgba(0, 14, 84, 0.12);
+  touch-action: none;
+}
+
+.mare-playground-tile {
+  position: absolute;
+  background-repeat: no-repeat;
+  background-size: 800% 600%;
+}
+
+.mare-playground-prop {
+  position: absolute;
+  aspect-ratio: 1;
+  background-repeat: no-repeat;
+  background-size: 800% 600%;
+  transform: translate(-50%, -62%);
+  pointer-events: none;
+  filter: drop-shadow(0 6px 8px rgba(0, 14, 84, 0.18));
+}
+
+.mare-playground-rider {
+  position: absolute;
+  width: 13%;
+  aspect-ratio: 176 / 235;
+  background-repeat: no-repeat;
+  background-size: 3200% 300%;
+  transform: translate(-50%, -80%);
+  pointer-events: none;
+  filter: drop-shadow(0 6px 6px rgba(0, 14, 84, 0.22));
 }
 
 /* ==========================================================================
