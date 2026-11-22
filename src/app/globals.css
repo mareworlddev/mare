@@ -1812,22 +1812,31 @@ a {
   50% { opacity: 0.95; }
 }
 
+/* Cunha fina no sol, alargando para fora; pivotada no centro do brilho. */
 .mare-weather-ray {
   position: absolute;
   left: 50%;
-  top: 4%;
-  width: 2px;
-  height: 172px;
+  top: 26%;
+  width: var(--w, 14px);
+  height: var(--h, 110px);
+  margin: calc(var(--h, 110px) / -2) 0 0 calc(var(--w, 14px) / -2);
   transform-origin: 50% 0;
-  transform: rotate(calc(-26deg + var(--i) * 26deg));
-  background: linear-gradient(180deg, rgba(255, 196, 110, 0.5), rgba(255, 196, 110, 0));
-  animation: mare-weather-ray 6s ease-in-out infinite;
-  animation-delay: calc(var(--i) * -1.4s);
+  clip-path: polygon(42% 0, 58% 0, 100% 100%, 0 100%);
+  background: linear-gradient(180deg, rgba(255, 206, 128, 0.6), rgba(255, 196, 110, 0) 88%);
+  filter: blur(3px);
+  animation: mare-weather-ray var(--dur, 6s) ease-in-out infinite alternate;
+  animation-delay: var(--delay, 0s);
 }
 
 @keyframes mare-weather-ray {
-  0%, 100% { opacity: 0.2; }
-  50% { opacity: 0.6; }
+  0% {
+    transform: rotate(calc(var(--a, 0deg) - 1.5deg)) scaleX(0.92);
+    opacity: 0.3;
+  }
+  100% {
+    transform: rotate(calc(var(--a, 0deg) + 1.5deg)) scaleX(1.08);
+    opacity: 0.75;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
