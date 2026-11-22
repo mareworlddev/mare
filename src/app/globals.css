@@ -1985,11 +1985,6 @@ a {
   outline-offset: 4px;
 }
 
-.mare-pet-drop.is-over {
-  background: #eaf2ff;
-  box-shadow: inset 0 0 0 2px rgba(5, 83, 175, 0.45);
-}
-
 .mare-sprite {
   filter: drop-shadow(0 8px 12px rgba(0, 14, 84, 0.08));
 }
