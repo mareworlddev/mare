@@ -1,4 +1,5 @@
 import { MARE_NIMBLE_MODEL, MARE_NIMBLE_WRITER, MARE_STATUS } from './constants';
+import type { MareChatMessage, MareToolDefinition } from './api';
 import { firecrawlScrape, firecrawlSearch } from './firecrawl';
 import { providerChat, providerChatStream, providerForModel } from './llm';
 import { mareLog, mareTimer, mareWarn, previewText } from './log';
@@ -151,45 +152,109 @@ async function runDirect(
     }
   }
 
-  // Pedido de imagem também no caminho direto, com o modelo de imagem da Pollinations.
-  const imageUrl = imageIntent(text, skill) ? await generateSkillImage(text, { onTool: keep.trackTool }) : null;
-
+  // Pedido de imagem no caminho direto é tool calling de verdade: o modelo anuncia
+  // a ferramenta, o agente executa e o resultado volta como mensagem `tool`.
+  const wantsImage = imageIntent(text, skill);
   const system =
     buildDirectSystemPrompt({ skill, sources: keep.sources, webSearch: wantsWeb }) +
-    (imageUrl
-      ? `
-
-IMAGEM JÁ GERADA: ${imageUrl}
-O serviço de imagens da Mare já gerou essa imagem com sucesso — a geração acontece fora de você.
-Não diga que não pode gerar imagens, não peça para descrever em texto e não ofereça alternativas.
-Apresente a imagem pronta: um comentário curto sobre ela e o markdown ![descrição curta](${imageUrl}).`
-      : '');
-  const messages = buildConversationMessages(
+    (wantsImage ? IMAGE_TOOL_HINT : '');
+  const messages: MareChatMessage[] = buildConversationMessages(
     body.messages.map((message) => ({ ...message, content: message.content.replace(/^\s*\/([\w-]+)\s*/, '').trim() })),
     system
   );
   const model = body.model || 'openai/gpt-oss-20b';
-  const result = await providerChatStream(
-    {
-      provider: providerForModel(model),
-      model,
-      messages,
-      ...effortProfile(body.effort),
-      reasoningEffort: /gpt-oss/i.test(model) ? 'low' : undefined,
-      timeoutMs: 120_000,
-    },
-    { onDelta: (chunk) => body.stream !== false && keep.emit({ type: 'delta', text: chunk }) }
-  );
+  const chatOptions = {
+    provider: providerForModel(model),
+    model,
+    ...effortProfile(body.effort),
+    reasoningEffort: (/gpt-oss/i.test(model) ? 'low' : undefined) as 'low' | undefined,
+    timeoutMs: 120_000,
+  };
+
+  // Primeira rodada em silêncio: tool_call não é resposta, nada de streamar aqui.
+  const result = await providerChatStream({
+    ...chatOptions,
+    messages,
+    tools: wantsImage ? [IMAGE_TOOL] : undefined,
+  });
 
   let content = result.content.trim();
+  let imageUrl: string | null = null;
+  let reasoning = result.reasoning || '';
+  let usage = result.usage;
 
-  // A imagem já existe: escritor teimoso (recusa ou esquecimento) não derruba o pedido.
-  if (imageUrl && !content.includes(imageUrl)) {
-    content = `${stripImageRefusal(content) || 'Aqui está a imagem que você pediu.'}\n\n![imagem](${imageUrl})`;
+  const imageCall = result.toolCalls.find((call) => call.function?.name === 'generate_image');
+  if (imageCall) {
+    let prompt = text;
+    try {
+      const parsed = JSON.parse(imageCall.function.arguments || '{}') as { prompt?: unknown };
+      if (typeof parsed?.prompt === 'string' && parsed.prompt.trim()) prompt = parsed.prompt.trim().slice(0, 400);
+    } catch {
+      // Argumentos invalidos: gera com o pedido original do usuario.
+    }
+
+    imageUrl = await generateSkillImage(prompt, { onTool: keep.trackTool });
+    const final = await providerChatStream(
+      {
+        ...chatOptions,
+        messages: [
+          ...messages,
+          { role: 'assistant', content: content || null, tool_calls: [imageCall] },
+          {
+            role: 'tool',
+            tool_call_id: imageCall.id,
+            name: 'generate_image',
+            content: imageUrl
+              ? `IMAGEM GERADA: ${imageUrl}. Apresente-a com ![descrição curta](${imageUrl}) e comente em uma frase.`
+              : 'A geração de imagem falhou. Diga que não conseguiu gerar agora e ofereça uma alternativa em texto.',
+          },
+        ],
+      },
+      { onDelta: (chunk) => body.stream !== false && keep.emit({ type: 'delta', text: chunk }) }
+    );
+
+    content = final.content.trim();
+    reasoning = final.reasoning || reasoning;
+    usage = final.usage || usage;
+
+    // A imagem gerada não pode sumir se o escritor renunciar de novo.
+    if (imageUrl && !content.includes(imageUrl)) {
+      content = `${stripImageRefusal(content) || 'Aqui está a imagem que você pediu.'}\n\n![imagem](${imageUrl})`;
+    }
+  } else if (wantsImage) {
+    // O modelo ignorou a ferramenta: executamos por conta própria, como antes.
+    imageUrl = await generateSkillImage(text, { onTool: keep.trackTool });
+    if (imageUrl && !content.includes(imageUrl)) {
+      content = `${stripImageRefusal(content) || 'Aqui está a imagem que você pediu.'}\n\n![imagem](${imageUrl})`;
+    }
   }
 
-  return { content, reasoning: result.reasoning || '', skills: [], usage: result.usage };
+  return { content, reasoning, skills: [], usage };
 }
+
+/** Ferramenta de imagem exposta ao modelo no caminho direto. */
+const IMAGE_TOOL: MareToolDefinition = {
+  type: 'function',
+  function: {
+    name: 'generate_image',
+    description:
+      'Gera uma imagem a partir de uma descrição em texto. Use para qualquer pedido de desenho, foto, arte, capa, banner, avatar ou ilustração.',
+    parameters: {
+      type: 'object',
+      properties: {
+        prompt: { type: 'string', description: 'Descrição detalhada da imagem a gerar.' },
+      },
+      required: ['prompt'],
+    },
+  },
+};
+
+/** Prompt da ferramenta, quando o pedido é de imagem. */
+const IMAGE_TOOL_HINT = `
+
+FERRAMENTA DISPONÍVEL: generate_image(prompt) — gera uma imagem e devolve a URL.
+O pedido é de imagem: chame generate_image ANTES de escrever qualquer texto.
+Depois do resultado da ferramenta, apresente a imagem pronta com o markdown indicado e um comentário curto.`;
 
 /** Linhas em que a Mare diz que não gera imagens — a imagem já foi gerada, então saem. */
 function stripImageRefusal(content: string) {
