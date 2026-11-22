@@ -1798,8 +1798,8 @@ a {
 
 .mare-weather-glow {
   position: absolute;
-  left: 50%;
-  top: 26%;
+  left: 4%;
+  top: 8%;
   width: 240px;
   height: 240px;
   transform: translate(-50%, -50%);
@@ -1812,17 +1812,17 @@ a {
   50% { opacity: 0.95; }
 }
 
-/* Cunha fina no sol, alargando para fora; pivotada no centro do brilho. */
+/* Feixe fino na origem (fora, à esquerda), alargando para a direita e
+   inclinado para baixo; pivô na ponta de origem. */
 .mare-weather-ray {
   position: absolute;
-  left: 50%;
-  top: 26%;
-  width: var(--w, 14px);
-  height: var(--h, 110px);
-  margin: calc(var(--h, 110px) / -2) 0 0 calc(var(--w, 14px) / -2);
-  transform-origin: 50% 0;
-  clip-path: polygon(42% 0, 58% 0, 100% 100%, 0 100%);
-  background: linear-gradient(180deg, rgba(255, 206, 128, 0.6), rgba(255, 196, 110, 0) 88%);
+  left: -34px;
+  top: var(--top, 10px);
+  width: var(--w, 22px);
+  height: var(--h, 170px);
+  transform-origin: 0 50%;
+  clip-path: polygon(0 40%, 0 60%, 100% 100%, 100% 0);
+  background: linear-gradient(90deg, rgba(255, 206, 128, 0.6), rgba(255, 196, 110, 0) 88%);
   filter: blur(3px);
   animation: mare-weather-ray var(--dur, 6s) ease-in-out infinite alternate;
   animation-delay: var(--delay, 0s);
@@ -1830,11 +1830,11 @@ a {
 
 @keyframes mare-weather-ray {
   0% {
-    transform: rotate(calc(var(--a, 0deg) - 1.5deg)) scaleX(0.92);
+    transform: rotate(calc(var(--rot, 30deg) - 1.2deg));
     opacity: 0.3;
   }
   100% {
-    transform: rotate(calc(var(--a, 0deg) + 1.5deg)) scaleX(1.08);
+    transform: rotate(calc(var(--rot, 30deg) + 1.2deg));
     opacity: 0.75;
   }
 }

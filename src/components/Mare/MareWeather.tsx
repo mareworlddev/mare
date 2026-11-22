@@ -14,12 +14,11 @@ function pickWeather(): MareWeatherKind {
 }
 
 const DROPS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-/** Raios: cunhas que saem do centro do sol, cada uma com ângulo/tamanho/ritmo próprios. */
+/** Feixes de luz entrando da esquerda, inclinados para baixo/direita. */
 const RAYS = [
-  { angle: -36, w: 10, h: 96, dur: 5.2, delay: -0.6 },
-  { angle: -14, w: 18, h: 128, dur: 6.1, delay: -2.4 },
-  { angle: 10, w: 14, h: 112, dur: 5.6, delay: -3.8 },
-  { angle: 34, w: 9, h: 88, dur: 6.4, delay: -1.5 },
+  { top: 4, rot: 30, w: 26, h: 185, dur: 5.6, delay: -0.8 },
+  { top: 30, rot: 34, w: 18, h: 155, dur: 6.4, delay: -2.6 },
+  { top: 52, rot: 31, w: 22, h: 170, dur: 5.9, delay: -4.1 },
 ];
 
 /** Rajadas curvas: cada linha tem desenho, espessura e ritmo próprios. */
@@ -66,11 +65,12 @@ export function MareWeather({ paused = false }: { paused?: boolean }) {
           <span className="mare-weather-glow" />
           {RAYS.map((ray) => (
             <span
-              key={ray.angle}
+              key={ray.top}
               className="mare-weather-ray"
               style={
                 {
-                  '--a': `${ray.angle}deg`,
+                  '--top': `${ray.top}px`,
+                  '--rot': `${ray.rot}deg`,
                   '--w': `${ray.w}px`,
                   '--h': `${ray.h}px`,
                   '--dur': `${ray.dur}s`,
