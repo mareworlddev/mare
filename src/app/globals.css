@@ -1734,8 +1734,20 @@ a {
   width: 200px;
   height: 210px;
   transform: translateX(-50%);
-  overflow: hidden;
   pointer-events: none;
+}
+
+/* Só chuva e vento ficam presos ao quadro da cena... */
+.mare-weather-clip {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* ...e o sol escorre para fora dele. */
+.mare-weather-open {
+  position: absolute;
+  inset: 0;
 }
 
 .mare-weather.is-paused *,
@@ -1816,10 +1828,10 @@ a {
    inclinado para baixo; pivô na ponta de origem. */
 .mare-weather-ray {
   position: absolute;
-  left: -34px;
+  left: -70px;
   top: var(--top, 10px);
-  width: var(--w, 22px);
-  height: var(--h, 170px);
+  width: var(--w, 26px);
+  height: var(--h, 190px);
   transform-origin: 0 50%;
   clip-path: polygon(0 40%, 0 60%, 100% 100%, 100% 0);
   background: linear-gradient(90deg, rgba(255, 206, 128, 0.6), rgba(255, 196, 110, 0) 88%);

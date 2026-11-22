@@ -43,25 +43,28 @@ export function MareWeather({ paused = false }: { paused?: boolean }) {
 
   return (
     <div className={`mare-weather is-${kind}${paused ? ' is-paused' : ''}`} aria-hidden="true">
-      {kind === 'rain'
-        ? DROPS.map((index) => (
-            <span key={index} className="mare-weather-drop" style={{ '--i': index } as CSSProperties} />
-          ))
-        : null}
-      {kind === 'wind'
-        ? GUSTS.map((gust, index) => (
-            <svg
-              key={index}
-              className="mare-weather-gust"
-              viewBox="0 0 90 30"
-              style={{ '--i': index, '--top': `${gust.top}px`, '--w': `${gust.width}px`, '--dur': `${gust.dur}s`, '--sw': gust.sw } as CSSProperties}
-            >
-              <path d={gust.d} pathLength={1} />
-            </svg>
-          ))
-        : null}
+      {/* Chuva e vento circulam dentro do corte da cena; o sol vive fora
+          dele, para os feixes entrarem de fora sem serem cortados. */}
+      {kind === 'rain' || kind === 'wind' ? (
+        <span className="mare-weather-clip">
+          {kind === 'rain'
+            ? DROPS.map((index) => (
+                <span key={index} className="mare-weather-drop" style={{ '--i': index } as CSSProperties} />
+              ))
+            : GUSTS.map((gust, index) => (
+                <svg
+                  key={index}
+                  className="mare-weather-gust"
+                  viewBox="0 0 90 30"
+                  style={{ '--i': index, '--top': `${gust.top}px`, '--w': `${gust.width}px`, '--dur': `${gust.dur}s`, '--sw': gust.sw } as CSSProperties}
+                >
+                  <path d={gust.d} pathLength={1} />
+                </svg>
+              ))}
+        </span>
+      ) : null}
       {kind === 'sun' ? (
-        <>
+        <span className="mare-weather-open">
           <span className="mare-weather-glow" />
           {RAYS.map((ray) => (
             <span
@@ -79,7 +82,7 @@ export function MareWeather({ paused = false }: { paused?: boolean }) {
               }
             />
           ))}
-        </>
+        </span>
       ) : null}
     </div>
   );
