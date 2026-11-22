@@ -361,13 +361,11 @@ export function MarePet({ active, paused = false, celebrateKey, onFeed, onRear }
 
       <div className="mare-pet-stage" ref={stageRef}>
         <MareWeather paused={paused} />
-        {/* Chão da cena: o tufo de grama balança atrás da Mare, dentro da sidebar.
-            Solta pela tela, ela viaja sozinha — a grama fica no lugar dela. */}
-        {pos ? null : (
-          <div className="mare-pet-scene" aria-hidden="true">
-            <AnimatedPetSprite sheet="scenery" row={0} frames={8} fps={5} paused={paused} height={SCENERY_HEIGHT} />
-          </div>
-        )}
+        {/* Chão da cena: o tufo de grama balança atrás da Mare — presa na
+            sidebar ou solta pela tela, o chão acompanha o pet. */}
+        <div className="mare-pet-scene" aria-hidden="true">
+          <AnimatedPetSprite sheet="scenery" row={0} frames={8} fps={5} paused={paused} height={SCENERY_HEIGHT} />
+        </div>
         <button
           type="button"
           className={`mare-pet-drop${dragOver ? ' is-over' : ''}`}
