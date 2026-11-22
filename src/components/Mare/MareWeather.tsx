@@ -14,8 +14,15 @@ function pickWeather(): MareWeatherKind {
 }
 
 const DROPS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
-const GUSTS = [0, 1, 2, 3];
 const RAYS = [0, 1, 2];
+
+/** Rajadas curvas: cada linha tem desenho, espessura e ritmo próprios. */
+const GUSTS = [
+  { d: 'M2 22 C 24 12, 44 8, 60 14 C 70 18, 78 13, 74 6', top: 18, width: 88, dur: 3.2, sw: 2.6 },
+  { d: 'M2 15 C 22 7, 52 21, 86 11', top: 44, width: 70, dur: 3.8, sw: 1.5 },
+  { d: 'M4 18 C 18 8, 32 24, 48 16 C 60 10, 74 17, 88 10', top: 66, width: 80, dur: 3.5, sw: 2.1 },
+  { d: 'M8 12 C 22 6, 34 16, 46 12 C 56 9, 62 16, 54 19 C 49 21, 47 15, 53 13', top: 30, width: 56, dur: 4.2, sw: 2.9 },
+];
 
 /**
  * Clima da cena ao redor da Mare na sidebar: vento, chuva ou sol, escolhido
@@ -37,8 +44,15 @@ export function MareWeather({ paused = false }: { paused?: boolean }) {
           ))
         : null}
       {kind === 'wind'
-        ? GUSTS.map((index) => (
-            <span key={index} className="mare-weather-gust" style={{ '--i': index } as CSSProperties} />
+        ? GUSTS.map((gust, index) => (
+            <svg
+              key={index}
+              className="mare-weather-gust"
+              viewBox="0 0 90 30"
+              style={{ '--i': index, '--top': `${gust.top}px`, '--w': `${gust.width}px`, '--dur': `${gust.dur}s`, '--sw': gust.sw } as CSSProperties}
+            >
+              <path d={gust.d} pathLength={1} />
+            </svg>
           ))
         : null}
       {kind === 'sun' ? (

@@ -1763,20 +1763,37 @@ a {
 
 .mare-weather-gust {
   position: absolute;
-  left: -60px;
-  top: calc(20% + var(--i) * 26%);
-  width: 54px;
-  height: 2px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, rgba(120, 140, 180, 0), rgba(120, 140, 180, 0.65));
-  animation: mare-weather-gust 3.4s linear infinite;
-  animation-delay: calc(var(--i) * -1.15s);
+  left: -70px;
+  top: var(--top, 20%);
+  width: var(--w, 72px);
+  height: auto;
+  overflow: visible;
+  animation: mare-weather-gust var(--dur, 3.4s) linear infinite;
+  animation-delay: calc(var(--i) * -1.05s);
+}
+
+/* pathLength=1 normaliza o comprimento: o traço varre a curva da cauda à
+   ponta, como se a rajada fosse desenhada pelo vento. */
+.mare-weather-gust path {
+  fill: none;
+  stroke: rgba(110, 132, 176, 0.6);
+  stroke-width: var(--sw, 2);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 0.3 0.9;
+  animation: mare-weather-dash var(--dur, 3.4s) linear infinite;
+  animation-delay: inherit;
 }
 
 @keyframes mare-weather-gust {
   0% { transform: translate(0, 0); opacity: 0; }
   18% { opacity: 1; }
   100% { transform: translate(258px, -12px); opacity: 0; }
+}
+
+@keyframes mare-weather-dash {
+  0% { stroke-dashoffset: 1.2; }
+  100% { stroke-dashoffset: 0; }
 }
 
 .mare-weather-glow {
