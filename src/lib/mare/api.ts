@@ -60,7 +60,9 @@ export async function fetchWithTimeout(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    return await fetch(input, { ...init, signal: controller.signal });
+    // Um AbortSignal externo (ex.: cliente desconectou) se soma ao timeout local.
+    const signal = init.signal ? AbortSignal.any([controller.signal, init.signal]) : controller.signal;
+    return await fetch(input, { ...init, signal });
   } finally {
     clearTimeout(timer);
   }

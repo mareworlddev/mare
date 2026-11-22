@@ -22,13 +22,13 @@ function domainOf(url: string) {
   }
 }
 
-async function firecrawl(path: string, body: Record<string, unknown>) {
+async function firecrawl(path: string, body: Record<string, unknown>, signal?: AbortSignal) {
   if (!key()) throw new Error('Configuração ausente: FIRE_CRAWLER_API_KEY.');
   const response = await fetch(`${BASE}${path}`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${key()}`, 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(45_000),
+    signal: signal ? AbortSignal.any([AbortSignal.timeout(45_000), signal]) : AbortSignal.timeout(45_000),
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok || data?.success === false) {
@@ -38,13 +38,13 @@ async function firecrawl(path: string, body: Record<string, unknown>) {
 }
 
 /** Busca real na web. Devolve lista vazia quando o FireCrawl falha. */
-export async function firecrawlSearch(query: string, limit = 6): Promise<MareSource[]> {
+export async function firecrawlSearch(query: string, limit = 6, signal?: AbortSignal): Promise<MareSource[]> {
   const normalized = cleanText(query).slice(0, 300);
   if (!normalized) return [];
 
   mareLog('pesquisa', `FireCrawl search · "${previewText(normalized, 70)}" · limite ${limit}`);
   try {
-    const data = await firecrawl('/search', { query: normalized, limit });
+    const data = await firecrawl('/search', { query: normalized, limit }, signal);
     const results: MareSource[] = (data?.data?.web || data?.data || [])
       .map((item: any) => {
         const url = String(item?.url || '');
@@ -67,10 +67,10 @@ export async function firecrawlSearch(query: string, limit = 6): Promise<MareSou
 }
 
 /** Texto principal de uma URL pública. `null` quando a leitura falha. */
-export async function firecrawlScrape(url: string): Promise<{ title: string; text: string } | null> {
+export async function firecrawlScrape(url: string, signal?: AbortSignal): Promise<{ title: string; text: string } | null> {
   if (!isSafeExternalUrl(url)) return null;
   try {
-    const data = await firecrawl('/scrape', { url, formats: ['markdown'], onlyMainContent: true });
+    const data = await firecrawl('/scrape', { url, formats: ['markdown'], onlyMainContent: true }, signal);
     const text = cleanText(data?.data?.markdown).slice(0, 12_000);
     if (!text) return null;
     return { title: cleanText(data?.data?.metadata?.title) || domainOf(url), text };

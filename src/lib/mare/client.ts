@@ -13,13 +13,18 @@ export interface StreamHandlers {
 }
 
 /** Envia a mensagem e consome o stream SSE da Mare. */
-export async function streamMareChat(body: MareChatBody, handlers: StreamHandlers = {}) {
+export async function streamMareChat(
+  body: MareChatBody,
+  handlers: StreamHandlers = {},
+  options?: { signal?: AbortSignal }
+) {
   mareLog('cliente', `enviando · skill=${body.skill || 'auto'} · mensagens=${body.messages.length}`);
 
   const response = await fetch('/api/mare/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ ...body, stream: true }),
+    signal: options?.signal,
   });
 
   if (!response.ok) {

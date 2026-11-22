@@ -111,7 +111,8 @@ async function runDirect(
   body: MareChatBody,
   keep: Collector,
   skill: MareSkillId,
-  text: string
+  text: string,
+  signal?: AbortSignal
 ): Promise<{ content: string; reasoning: string; skills: string[]; usage?: Record<string, unknown> }> {
   const enabled = body.settings?.enabledTools || [];
   const wantsWeb = body.settings?.webSearch !== false;
@@ -131,7 +132,7 @@ async function runDirect(
       status: 'running',
     };
     keep.trackTool(call);
-    const found = await firecrawlSearch(text, 6);
+    const found = await firecrawlSearch(text, 6, signal);
     keep.trackTool({
       ...call,
       status: found.length ? 'done' : 'error',
@@ -143,7 +144,7 @@ async function runDirect(
 
   const url = wantsWeb ? text.match(/https?:\/\/[^\s]+/i)?.[0]?.replace(/[),.;]+$/, '') : undefined;
   if (url && enabled.includes('read_page')) {
-    const page = await firecrawlScrape(url);
+    const page = await firecrawlScrape(url, signal);
     if (page) {
       keep.trackSources([
         { title: page.title, url, snippet: previewText(page.text, 220), domain: new URL(url).hostname.replace(/^www\./, '') },
@@ -169,6 +170,7 @@ async function runDirect(
     ...effortProfile(body.effort),
     reasoningEffort: (/gpt-oss/i.test(model) ? 'low' : undefined) as 'low' | undefined,
     timeoutMs: 120_000,
+    signal,
   };
 
   // Primeira rodada em silêncio: tool_call não é resposta, nada de streamar aqui.
@@ -267,7 +269,8 @@ function stripImageRefusal(content: string) {
 async function runNimble(
   body: MareChatBody,
   keep: Collector,
-  text: string
+  text: string,
+  signal?: AbortSignal
 ): Promise<{ content: string; reasoning: string; skills: string[]; usage?: Record<string, unknown> }> {
   const { emit } = keep;
   const enabled = body.settings?.enabledTools || [];
@@ -289,6 +292,7 @@ async function runNimble(
         tools,
         enabledTools: enabled,
         events: { onTool: keep.trackTool, onSources: keep.trackSources },
+        signal,
       })
     : { sources: [], pages: [], toolCalls: [] };
 
@@ -298,7 +302,7 @@ async function runNimble(
     state: 'walk',
   });
 
-  const plan = await planWithOrchestrator({ text, skills, evidence });
+  const plan = await planWithOrchestrator({ text, skills, evidence, signal });
   if (plan) emit({ type: 'thought', text: previewText(plan, 180) });
 
   const imageUrl =
@@ -321,6 +325,7 @@ async function runNimble(
       ...profile,
       reasoningEffort: 'low',
       timeoutMs: 120_000,
+      signal,
     },
     { onDelta: (chunk) => body.stream !== false && emit({ type: 'delta', text: chunk }) }
   );
@@ -344,6 +349,7 @@ async function runNimble(
       maxTokens: profile.maxTokens,
       reasoningEffort: 'low',
       timeoutMs: 120_000,
+      signal,
     });
     content = fallback.content.trim();
   }
@@ -377,6 +383,7 @@ async function runNimble(
         temperature: 0.3,
         maxTokens: profile.maxTokens,
         timeoutMs: 120_000,
+        signal,
       });
       if (fixed.content.trim()) content = fixed.content.trim();
     } catch (error) {
@@ -387,7 +394,7 @@ async function runNimble(
   return { content, reasoning: result.reasoning || '', skills: ids, usage: result.usage };
 }
 
-export async function runMareAgent(body: MareChatBody, emit: Emit): Promise<AgentResult> {
+export async function runMareAgent(body: MareChatBody, emit: Emit, signal?: AbortSignal): Promise<AgentResult> {
   const startedAt = Date.now();
   const timer = mareTimer('agente', 'rodada');
   const text = cleanedUserText(body);
@@ -395,11 +402,16 @@ export async function runMareAgent(body: MareChatBody, emit: Emit): Promise<Agen
   const model = body.model || MARE_NIMBLE_MODEL;
   const keep = collector(emit);
 
+  // Cliente já se foi: nem começa (cada etapa abaixo também observa o sinal).
+  if (signal?.aborted) throw new Error('Requisição cancelada pelo cliente.');
+
   emit({ type: 'status', text: statusForSkill(skill), state: 'walk' });
   emit({ type: 'thought', text: `Skill ${skill}: ${statusForSkill(skill).toLowerCase()}.` });
 
   const answer =
-    model === MARE_NIMBLE_MODEL ? await runNimble(body, keep, text) : await runDirect(body, keep, skill, text);
+    model === MARE_NIMBLE_MODEL
+      ? await runNimble(body, keep, text, signal)
+      : await runDirect(body, keep, skill, text, signal);
 
   if (!answer.content.trim()) throw new Error('A Mare não conseguiu formular uma resposta.');
 

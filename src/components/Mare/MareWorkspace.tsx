@@ -102,6 +102,15 @@ function uid(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+/** Rejeição de fetch/sinal abortado (AbortError e semelhantes). */
+function abortReason(cause: unknown): boolean {
+  const error = cause as Error | undefined;
+  return (
+    !!error &&
+    (error.name === 'AbortError' || error.name === 'TimeoutError' || /aborted|abort(i|i)do/i.test(error.message || ''))
+  );
+}
+
 /** Conversas precisam de uuid real: é a chave do espelho durável no Supabase. */
 function newConversationId() {
   return typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
@@ -286,6 +295,8 @@ export default function MareWorkspace() {
   const filesRef = useRef(new Map<string, File>());
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef(false);
+  /** AbortController real do fetch em curso: parar de verdade corta o SSE. */
+  const chatAbortRef = useRef<AbortController | null>(null);
 
   const settings = state.settings;
   const sounds = useMareSounds(settings);
@@ -397,7 +408,10 @@ export default function MareWorkspace() {
       .then((payload) => {
         if (!cancelled && payload?.state) {
           const remote = normalizeState(payload.state);
-          if (remote.updatedAt && (!state.updatedAt || remote.updatedAt > state.updatedAt)) setState(remote);
+          if (!remote.updatedAt) return;
+          // Compara contra o estado atual (não a closure do render): evita
+          // descartar mensagem escrita enquanto o GET estava em voo.
+          setState((current) => (current.updatedAt && current.updatedAt >= remote.updatedAt ? current : remote));
         }
       })
       .catch(() => undefined);
@@ -538,6 +552,8 @@ export default function MareWorkspace() {
     const content = text || documents.map((doc) => doc.name).join(', ');
 
     abortRef.current = false;
+    chatAbortRef.current?.abort();
+    chatAbortRef.current = new AbortController();
     setError('');
     setInput('');
     setCommand(null);
@@ -639,26 +655,32 @@ export default function MareWorkspace() {
             else sounds.playCompletionSound();
           },
           onDone: () => undefined,
-        }
+        },
+        { signal: chatAbortRef.current?.signal }
       );
     } catch (cause) {
-      const message = cause instanceof Error ? cause.message : 'Não consegui responder agora.';
-      setError(message);
-      sounds.playErrorSound();
-      setState((current) => ({
-        ...current,
-        conversations: current.conversations.map((item) =>
-          item.id === conversationId
-            ? {
-                ...item,
-                messages: [
-                  ...item.messages,
-                  { id: uid('error'), role: 'assistant' as const, content: `A Mare tropeçou: ${message}`, createdAt: new Date().toISOString() },
-                ],
-              }
+      // Parada voluntária não é erro: silêncio na interface.
+      if (abortRef.current || abortReason(cause)) {
+        chatAbortRef.current = null;
+      } else {
+        const message = cause instanceof Error ? cause.message : 'Não consegui responder agora.';
+        setError(message);
+        sounds.playErrorSound();
+        setState((current) => ({
+          ...current,
+          conversations: current.conversations.map((item) =>
+            item.id === conversationId
+              ? {
+                  ...item,
+                  messages: [
+                    ...item.messages,
+                    { id: uid('error'), role: 'assistant' as const, content: `A Mare tropeçou: ${message}`, createdAt: new Date().toISOString() },
+                  ],
+                }
             : item
         ),
       }));
+      }
     } finally {
       setIsSending(false);
       setStatusText('');
@@ -756,6 +778,9 @@ export default function MareWorkspace() {
 
   const handleStop = useCallback(() => {
     abortRef.current = true;
+    // Corta o SSE de verdade: o servidor derruba as chamadas aos provedores.
+    chatAbortRef.current?.abort();
+    chatAbortRef.current = null;
     setIsSending(false);
     setStatusText('');
   }, []);

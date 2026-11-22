@@ -24,6 +24,8 @@ export interface MareChatOptions {
   reasoningEffort?: 'low' | 'medium' | 'high';
   tools?: MareToolDefinition[];
   toolChoice?: 'auto' | 'none';
+  /** Abortado quando o cliente desconecta: corta o custo da rodada na hora. */
+  signal?: AbortSignal;
 }
 
 export interface MareChatHandlers {
@@ -100,13 +102,16 @@ async function request(options: MareChatOptions, stream: boolean) {
           method: 'POST',
           headers: { Authorization: `Bearer ${config.key()}`, 'Content-Type': 'application/json' },
           body: JSON.stringify(body),
+          signal: options.signal,
         },
         options.timeoutMs ?? 150_000
       );
 
       if (!response.ok) {
         const text = await response.text().catch(() => '');
-        lastError = new Error(`${config.label} ${response.status}: ${text.slice(0, 300) || 'falha na requisição'}`);
+        // O corpo do provedor pode trazer detalhes internos (quota, org-id) e
+        // não deve chegar ao cliente: o detalhe real fica só no log abaixo.
+        lastError = new Error(`${config.label} ${response.status}: falha na conversa com o modelo.`);
         mareWarn('provedor', `${config.label} HTTP ${response.status} · tentativa ${attempt + 1}`, previewText(text, 220));
         if ((response.status === 429 || response.status >= 500) && attempt === 0) {
           await sleep(1100);

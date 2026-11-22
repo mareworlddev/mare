@@ -42,6 +42,7 @@ export async function collectEvidence(input: {
   tools: string[];
   enabledTools: MareToolId[];
   events?: ExecutorEvents;
+  signal?: AbortSignal;
 }): Promise<NimbleEvidence> {
   const allowed = new Set(input.tools);
   const evidence: NimbleEvidence = { sources: [], pages: [], toolCalls: [] };
@@ -53,7 +54,7 @@ export async function collectEvidence(input: {
     evidence.toolCalls.push(call);
     input.events?.onTool?.(call);
 
-    const found = await firecrawlSearch(input.text, 6);
+    const found = await firecrawlSearch(input.text, 6, input.signal);
     evidence.sources.push(...found);
     const done = finish(call, found.length ? 'done' : 'error', found.length ? `${found.length} fonte(s)` : 'Nenhuma fonte encontrada', startedAt);
     evidence.toolCalls[evidence.toolCalls.length - 1] = done;
@@ -68,7 +69,7 @@ export async function collectEvidence(input: {
     evidence.toolCalls.push(call);
     input.events?.onTool?.(call);
 
-    const page = await firecrawlScrape(url);
+    const page = await firecrawlScrape(url, input.signal);
     const done = finish(call, page ? 'done' : 'error', page ? `${page.title} · ${page.text.length} caracteres` : 'Página ilegível', startedAt);
     evidence.toolCalls[evidence.toolCalls.length - 1] = done;
     input.events?.onTool?.(done);
@@ -89,6 +90,7 @@ export async function planWithOrchestrator(input: {
   text: string;
   skills: NimbleSkill[];
   evidence: NimbleEvidence;
+  signal?: AbortSignal;
 }): Promise<string> {
   const instructions = input.skills.map((skill) => `## ${skill.id}\n${skill.instructions}`).join('\n\n');
   const sources = input.evidence.sources
@@ -115,6 +117,7 @@ export async function planWithOrchestrator(input: {
       temperature: 0.2,
       maxTokens: 1500,
       timeoutMs: 45_000,
+      signal: input.signal,
     });
     return result.content.trim();
   } catch (error) {

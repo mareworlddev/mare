@@ -75,6 +75,11 @@ export async function POST(request: Request) {
   const guard = await guardAiRoute();
   if (guard.mode === 'blocked') return guard.response;
 
+  // Desconexão do cliente encerra as chamadas aos provedores (não gasta
+  // crédito rodando até o fim de uma resposta que ninguém vai ler).
+  const transport = new AbortController();
+  request.signal.addEventListener('abort', () => transport.abort(), { once: true });
+
   const contentLength = Number(request.headers.get('content-length') || 0);
   if (contentLength > MAX_BODY_BYTES) {
     return jsonError(413, 'Histórico grande demais para enviar de uma vez.');
@@ -130,14 +135,14 @@ export async function POST(request: Request) {
 
   if (body.stream === false) {
     try {
-      const { message } = await runMareAgent(body, () => undefined);
+      const { message } = await runMareAgent(body, () => undefined, transport.signal);
       mirrorRound({ id: message.id, role: 'assistant', content: message.content });
       return NextResponse.json({ message, text: message.content, sources: message.sources });
     } catch (error) {
-      return NextResponse.json(
-        { error: error instanceof Error ? error.message : 'Falha ao consultar a Mare.' },
-        { status: 500 }
-      );
+      // Mensagem neutra para o cliente; detalhe real (provedor, status) fica no log.
+      if (request.signal.aborted) return NextResponse.json({ error: 'Requisição cancelada.' }, { status: 499 });
+      mareWarn('rota', 'Falha na rodada', error instanceof Error ? error.message : error);
+      return NextResponse.json({ error: 'A Mare não conseguiu responder agora. Tente novamente.' }, { status: 500 });
     }
   }
 
@@ -164,11 +169,17 @@ export async function POST(request: Request) {
 
       (async () => {
         try {
-          const { message } = await runMareAgent(body, send);
+          const { message } = await runMareAgent(body, send, transport.signal);
           mirrorRound({ id: message.id, role: 'assistant', content: message.content });
         } catch (error) {
+          // Texto neutro no evento; detalhe só no console do servidor.
           mareWarn('rota', 'SSE falhou', error instanceof Error ? error.message : error);
-          send({ type: 'error', error: error instanceof Error ? error.message : 'A Mare tropeçou no caminho. Tente novamente.' });
+          send({
+            type: 'error',
+            error: request.signal.aborted
+              ? 'Conexão encerrada.'
+              : 'A Mare tropeçou no caminho. Tente novamente.',
+          });
         } finally {
           send({ type: 'done' });
           closed = true;

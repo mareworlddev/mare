@@ -10,7 +10,7 @@ const csp = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https:",
+  "img-src 'self' data: blob: https://*.googleusercontent.com",
   "font-src 'self' data:",
   `connect-src 'self' https://*.supabase.co${isDev ? ' ws:' : ''}`,
   "worker-src 'self' blob:",
@@ -35,19 +35,7 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: { '/api/mare/chat': ['./mare-nimble/**/*'] },
   images: {
     formats: ['image/avif', 'image/webp'],
-    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
-    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
-    minimumCacheTTL: 60,
-    dangerouslyAllowSVG: true,
-    contentDispositionType: 'attachment',
-    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     unoptimized: process.env.NODE_ENV === 'development',
-    remotePatterns: [
-      { protocol: 'https', hostname: 'gen.pollinations.ai' },
-      { protocol: 'https', hostname: '**.pollinations.ai' },
-      { protocol: 'https', hostname: 'placehold.co' },
-      { protocol: 'https', hostname: '**.placehold.co' },
-    ],
   },
   async headers() {
     return [

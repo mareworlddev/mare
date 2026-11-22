@@ -30,9 +30,15 @@ export async function GET(request: Request) {
     if (!upstream.ok || !upstream.body) {
       throw new Error(`Pollinations respondeu ${upstream.status}`);
     }
+    // Só repassa bytes de imagem de verdade: um 200 do upstream com text/html
+    // ou SVG navegável não pode ser servido na nossa origem.
+    const contentType = (upstream.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+    if (!['image/png', 'image/jpeg', 'image/webp', 'image/gif'].includes(contentType)) {
+      throw new Error(`Pollinations devolveu content-type inesperado (${contentType || 'vazio'})`);
+    }
     return new Response(upstream.body, {
       headers: {
-        'Content-Type': upstream.headers.get('content-type') || 'image/jpeg',
+        'Content-Type': contentType,
         'Cache-Control': 'public, max-age=86400, immutable',
       },
     });

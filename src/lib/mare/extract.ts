@@ -4,6 +4,16 @@ export type AttachmentKind = 'pdf' | 'doc' | 'sheet' | 'slides' | 'text';
 export const ATTACHMENT_MAX_BYTES = 8 * 1024 * 1024;
 /** Quanto texto de um documento entra na conversa. */
 const MAX_CHARS = 7000;
+/**
+ * Teto de materialização ANTES do corte em MAX_CHARS: parseadores expandem o
+ * arquivo (csv de planilha com milhões de células, XML de slide) e estouram a
+ * memória da função. Nada componente mais que isso em texto consolidado.
+ */
+const EXTRACT_BUDGET_CHARS = 400_000;
+/** Janela por aba em planilhas: linhas x colunas lidas no máximo. */
+const SHEET_ROW_CAP = 2_000;
+const SHEET_COL_CAP = 60;
+const SHEET_COUNT_CAP = 20;
 
 const EXTENSIONS: Record<string, AttachmentKind> = {
   pdf: 'pdf',
@@ -60,11 +70,26 @@ async function readDocx(buffer: Buffer) {
 async function readSheet(buffer: Buffer) {
   const XLSX = await import('xlsx');
   const book = XLSX.read(buffer, { type: 'buffer' });
-  const parts = book.SheetNames.map((name) => {
-    const sheet = book.Sheets[name];
-    const csv = XLSX.utils.sheet_to_csv(sheet, { blankrows: false }).trim();
-    return csv ? `Planilha "${name}":\n${csv}` : '';
-  }).filter(Boolean);
+  const parts: string[] = [];
+  let used = 0;
+  for (const name of book.SheetNames.slice(0, SHEET_COUNT_CAP)) {
+    // Reescreve o '!ref' numa janela fechada: sem isso, uma aba com 1M x 20
+    // células vira centenas de MB de CSV em uma chamada só.
+    const original = book.Sheets[name];
+    const ref = original?.['!ref'];
+    let window = original;
+    if (ref) {
+      const range = XLSX.utils.decode_range(ref);
+      range.e.r = Math.min(range.e.r, range.s.r + SHEET_ROW_CAP - 1);
+      range.e.c = Math.min(range.e.c, range.s.c + SHEET_COL_CAP - 1);
+      window = { ...original, '!ref': XLSX.utils.encode_range(range) };
+    }
+    const csv = XLSX.utils.sheet_to_csv(window, { blankrows: false }).trim();
+    if (!csv) continue;
+    parts.push(`Planilha "${name}":\n${csv}`);
+    used += csv.length;
+    if (used >= EXTRACT_BUDGET_CHARS) break;
+  }
   return { text: clean(parts.join('\n\n')) };
 }
 
@@ -75,7 +100,11 @@ async function readSlides(buffer: Buffer) {
     .filter((path) => /^ppt\/slides\/slide\d+\.xml$/.test(path))
     .sort((a, b) => Number(a.match(/(\d+)\.xml$/)?.[1]) - Number(b.match(/(\d+)\.xml$/)?.[1]));
   const parts: string[] = [];
+  let used = 0;
   for (const [index, path] of slides.entries()) {
+    // XML de slide pode ser gigantesco num arquivo comprimido; corta quando o
+    // orçamento de texto estourar em vez de empilhar tudo.
+    if (used >= EXTRACT_BUDGET_CHARS) break;
     const xml = await zip.files[path].async('string');
     const texts = [...xml.matchAll(/<a:t>([\s\S]*?)<\/a:t>/g)]
       .map((match) => match[1]
@@ -86,7 +115,10 @@ async function readSlides(buffer: Buffer) {
         .replace(/&apos;/g, "'"))
       .join(' ')
       .trim();
-    if (texts) parts.push(`Slide ${index + 1}: ${texts}`);
+    if (texts) {
+      parts.push(`Slide ${index + 1}: ${texts}`);
+      used += texts.length;
+    }
   }
   return { text: clean(parts.join('\n\n')) };
 }
