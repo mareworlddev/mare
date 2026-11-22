@@ -160,7 +160,9 @@ async function runDirect(
       ? `
 
 IMAGEM JÁ GERADA: ${imageUrl}
-Inclua essa imagem na resposta com ![descrição curta](${imageUrl}).`
+O serviço de imagens da Mare já gerou essa imagem com sucesso — a geração acontece fora de você.
+Não diga que não pode gerar imagens, não peça para descrever em texto e não ofereça alternativas.
+Apresente a imagem pronta: um comentário curto sobre ela e o markdown ![descrição curta](${imageUrl}).`
       : '');
   const messages = buildConversationMessages(
     body.messages.map((message) => ({ ...message, content: message.content.replace(/^\s*\/([\w-]+)\s*/, '').trim() })),
@@ -179,7 +181,21 @@ Inclua essa imagem na resposta com ![descrição curta](${imageUrl}).`
     { onDelta: (chunk) => body.stream !== false && keep.emit({ type: 'delta', text: chunk }) }
   );
 
-  return { content: result.content, reasoning: result.reasoning || '', skills: [], usage: result.usage };
+  let content = result.content.trim();
+
+  // A imagem já existe: escritor teimoso (recusa ou esquecimento) não derruba o pedido.
+  if (imageUrl && !content.includes(imageUrl)) {
+    content = `${stripImageRefusal(content) || 'Aqui está a imagem que você pediu.'}\n\n![imagem](${imageUrl})`;
+  }
+
+  return { content, reasoning: result.reasoning || '', skills: [], usage: result.usage };
+}
+
+/** Linhas em que a Mare diz que não gera imagens — a imagem já foi gerada, então saem. */
+function stripImageRefusal(content: string) {
+  return content
+    .replace(/[^\n]*(não (consigo|posso|é possível)[^\n]*imagem[^\n]*)/gi, '')
+    .trim();
 }
 
 /** `mare-nimble`: roteia skills, coleta evidência, orquestra, escreve e valida. */
@@ -269,10 +285,7 @@ async function runNimble(
 
   // A imagem já existe: se o escritor esqueceu, entra de qualquer forma.
   if (imageUrl && !content.includes(imageUrl)) {
-    const withoutRefusal = content
-      .replace(/[^\n]*(não (consigo|posso|é possível)[^\n]*imagem[^\n]*)/gi, '')
-      .trim();
-    content = `${withoutRefusal || 'Aqui está a imagem que você pediu.'}\n\n![imagem](${imageUrl})`;
+    content = `${stripImageRefusal(content) || 'Aqui está a imagem que você pediu.'}\n\n![imagem](${imageUrl})`;
   }
 
   const check = validateAnswer({
