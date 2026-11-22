@@ -9,7 +9,7 @@ import {
   type ComponentPropsWithoutRef,
   type ReactNode,
 } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { Check, ChevronDown, Copy } from 'lucide-react';
 import type { Pluggable } from 'unified';
 import rehypeHighlight from 'rehype-highlight';
 
@@ -76,6 +76,51 @@ function languageOf(children: ReactNode) {
   return LANGUAGE_NAMES[id] || id.charAt(0).toUpperCase() + id.slice(1);
 }
 
+/** Texto puro de um nó do React, para copiar o código com as quebras originais. */
+function textOf(node: ReactNode): string {
+  if (node == null || typeof node === 'boolean') return '';
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(textOf).join('');
+  if (isValidElement<{ children?: ReactNode }>(node)) return textOf(node.props.children);
+  return '';
+}
+
+/** Botão copiar da barra do bloco de código, na mesma família do botão recolher. */
+function CopyCodeButton({ code }: { code: string }) {
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!copied) return;
+    const timer = setTimeout(() => setCopied(false), 2000);
+    return () => clearTimeout(timer);
+  }, [copied]);
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(code.replace(/\\n$/, ''));
+      setCopied(true);
+    } catch {
+      // Sem acesso ao clipboard (permissão ou página não segura): fica quieto.
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      className="mare-ws-code-copy"
+      aria-label={copied ? 'Copiado' : 'Copiar código'}
+      onClick={copy}
+    >
+      {copied ? (
+        <Check className="size-3" aria-hidden="true" />
+      ) : (
+        <Copy className="size-3" aria-hidden="true" />
+      )}
+      {copied ? 'Copiado' : 'Copiar'}
+    </button>
+  );
+}
+
 /**
  * Bloco que passa de `limit` pixels nasce recolhido, com um botão para abrir.
  * Mede o conteúdo (e não o contêiner), então continua certo quando a resposta
@@ -89,6 +134,7 @@ export function CollapsibleText({
   className = 'mare-ws-markdown',
   variant,
   head,
+  headExtra,
 }: {
   children: ReactNode;
   limit: number;
@@ -98,6 +144,8 @@ export function CollapsibleText({
   variant?: 'code';
   /** Barra fixa no topo do bloco; quando existe, o botão mora nela. */
   head?: ReactNode;
+  /** Botões extras da barra fixa, à esquerda do recolher/expandir. */
+  headExtra?: ReactNode;
 }) {
   const body = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
@@ -139,7 +187,10 @@ export function CollapsibleText({
       {head !== undefined ? (
         <div className="mare-ws-collapse-head">
           <span className="mare-ws-collapse-label">{head}</span>
-          {toggle}
+          <div className="mare-ws-collapse-tools">
+            {headExtra}
+            {toggle}
+          </div>
         </div>
       ) : null}
       <div ref={body} className={['mare-ws-collapse-body', className].filter(Boolean).join(' ')}>
@@ -150,7 +201,7 @@ export function CollapsibleText({
   );
 }
 
-/** Bloco de código: barra com a linguagem e o botão recolher/expandir. */
+/** Bloco de código: barra com a linguagem, o botão copiar e o recolher/expandir. */
 export function MarkdownPre({
   node: _node,
   children,
@@ -164,6 +215,7 @@ export function MarkdownPre({
       className=""
       variant="code"
       head={languageOf(children)}
+      headExtra={<CopyCodeButton code={textOf(children)} />}
     >
       <pre {...props}>{children}</pre>
     </CollapsibleText>

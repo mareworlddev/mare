@@ -93,8 +93,15 @@ export interface MarePersistedState {
   updatedAt: string;
 }
 
+/** Mensagem do histórico que o cliente envia; `id` alimenta o espelho no Supabase. */
+export interface MareChatHistoryInput {
+  id?: string;
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 export interface MareChatBody {
-  messages: Array<{ role: 'user' | 'assistant'; content: string }>;
+  messages: MareChatHistoryInput[];
   skill?: MareSkillId;
   tool?: MareToolId;
   settings?: Partial<MareSettings>;
@@ -102,6 +109,12 @@ export interface MareChatBody {
   effort?: MareEffort;
   source?: string;
   stream?: boolean;
+  /** Conversa atual (uuid): espelho durável em chats/messages. */
+  conversationId?: string;
+  /** Projeto ativo (uuid): só entra no espelho quando o lance é de quadro. */
+  projectId?: string;
+  /** Título da conversa no cliente (renomear acompanha o espelho). */
+  conversationTitle?: string;
 }
 
 export type MareStreamEvent =

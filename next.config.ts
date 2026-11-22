@@ -1,17 +1,25 @@
 import type { NextConfig } from 'next';
 
-const getHostname = (value?: string) => {
-  if (!value) return null;
-  try {
-    return new URL(value).hostname;
-  } catch {
-    return null;
-  }
-};
-
-const r2PublicHostname =
-  getHostname(process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL) ||
-  getHostname(process.env.R2_PUBLIC_BASE_URL);
+/**
+ * CSP fechada: fontes e estilos são self-hosted (@fontsource), imagens vêm de
+ * hosts https conhecidos, o navegador só fala com a própria origem e com o
+ * projeto Supabase. O dev recebe 'unsafe-eval'/'ws:' para o HMR do Next.
+ */
+const isDev = process.env.NODE_ENV === 'development';
+const csp = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data: blob: https:",
+  "font-src 'self' data:",
+  `connect-src 'self' https://*.supabase.co${isDev ? ' ws:' : ''}`,
+  "worker-src 'self' blob:",
+  "media-src 'self' blob:",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+].join('; ');
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -39,11 +47,6 @@ const nextConfig: NextConfig = {
       { protocol: 'https', hostname: '**.pollinations.ai' },
       { protocol: 'https', hostname: 'placehold.co' },
       { protocol: 'https', hostname: '**.placehold.co' },
-      { protocol: 'https', hostname: '**.r2.dev' },
-      { protocol: 'https', hostname: '**.r2.cloudflarestorage.com' },
-      ...(r2PublicHostname
-        ? [{ protocol: 'https' as const, hostname: r2PublicHostname }]
-        : []),
     ],
   },
   async headers() {
@@ -51,6 +54,7 @@ const nextConfig: NextConfig = {
       {
         source: '/(.*)',
         headers: [
+          { key: 'Content-Security-Policy', value: csp },
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'X-Frame-Options', value: 'DENY' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },

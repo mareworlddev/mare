@@ -12,6 +12,7 @@ import {
   Home,
   Languages,
   ListChecks,
+  LogOut,
   PenLine,
   Route,
   Search,
@@ -24,6 +25,8 @@ import {
 
 import type { SlashCommand } from './MareComposer';
 import { ThreadList, type Thread } from './MareThreadList';
+import { MareProjectsSection } from './MareProjectsSection';
+import { MareKanban } from './MareKanban';
 import { Conversation } from './MareConversation';
 import { MessageBubble } from './MareMessageBubble';
 import { MessageActions } from './MareMessageActions';
@@ -57,6 +60,18 @@ import {
 } from '@/lib/mare/constants';
 import { isMareCompliment } from '@/lib/mare/compliments';
 import { streamMareChat } from '@/lib/mare/client';
+import {
+  createProject,
+  deleteProject,
+  listProjects,
+  projectPayload,
+  type MareProject,
+  type MareTask,
+} from '@/lib/mare/projects';
+import { isMareUuid } from '@/lib/mare/mirror';
+import { isSupabaseConfigured } from '@/lib/supabase/config';
+import { createClient } from '@/lib/supabase/client';
+import { isSafeExternalUrl } from '@/lib/security/url';
 import { useMareSounds } from '@/hooks/useMareSounds';
 import type {
   MareConversation,
@@ -85,6 +100,21 @@ function withoutGeneratedImage(content: string) {
 
 function uid(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+/** Conversas precisam de uuid real: é a chave do espelho durável no Supabase. */
+function newConversationId() {
+  return typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+    ? crypto.randomUUID()
+    : uid('chat');
+}
+
+/** Conta logada, só com o que pertence à sessão — nada de auth.users na API pública. */
+interface MareSessionUser {
+  id: string;
+  name: string;
+  email: string;
+  avatar: string | null;
 }
 
 function iconFor(name: string, size = 16) {
@@ -150,10 +180,14 @@ function groupFor(date: string): Thread['group'] {
 }
 
 function sourceToStackSource(source: MareSource, index: number): Source {
+  const rawUrl = source.url;
+  // Defesa em profundidade: o blob sincronizado também passa por aqui, então a
+  // URL é revalidada no ponto de render, não só na hora em que nasceu.
+  const url = isSafeExternalUrl(rawUrl) ? rawUrl : undefined;
   return {
     title: source.title,
-    url: source.url,
-    domain: source.domain || (() => { try { return new URL(source.url).hostname.replace(/^www\./, ''); } catch { return 'fonte'; } })(),
+    url,
+    domain: url || (() => { try { return new URL(rawUrl).hostname.replace(/^www\./, ''); } catch { return 'fonte'; } })(),
     color: ['#000e54', '#0553af', '#7aa2e3', '#c7d8f5'][index % 4],
   };
 }
@@ -243,6 +277,12 @@ export default function MareWorkspace() {
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [error, setError] = useState('');
   const [attachments, setAttachments] = useState<PendingAttachment[]>([]);
+  const [projects, setProjects] = useState<MareProject[]>([]);
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
+  const [view, setView] = useState<'chat' | 'board'>('chat');
+  const [sessionUser, setSessionUser] = useState<MareSessionUser | null>(null);
+  /** Vira true só depois de consultar a sessão: evita piscar "desabilitado". */
+  const [sessionChecked, setSessionChecked] = useState(false);
   const filesRef = useRef(new Map<string, File>());
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef(false);
@@ -253,7 +293,82 @@ export default function MareWorkspace() {
     () => state.conversations.find((item) => item.id === state.activeId) || state.conversations[0] || null,
     [state.activeId, state.conversations]
   );
+  const activeProject = useMemo(
+    () => (activeProjectId ? projects.find((item) => item.id === activeProjectId) || null : null),
+    [activeProjectId, projects]
+  );
   const messages = activeConversation?.messages || [];
+
+  // Sessão: o próprio usuário lê os dados só do token validado em getUser();
+  // a tabela auth.users nunca é exposta para a API pública.
+  useEffect(() => {
+    if (!isSupabaseConfigured()) return;
+    let alive = true;
+    const supabase = createClient();
+    const toBadge = (user: any): MareSessionUser | null =>
+      user
+        ? {
+            id: String(user.id),
+            email: String(user.email || ''),
+            name: String(user.user_metadata?.name || user.user_metadata?.full_name || user.email || 'conta'),
+            avatar: typeof user.user_metadata?.picture === 'string' && isSafeExternalUrl(user.user_metadata.picture) ? user.user_metadata.picture : null,
+          }
+        : null;
+    supabase.auth
+      .getUser()
+      .then(({ data }) => {
+        if (alive) {
+          setSessionUser(toBadge(data?.user));
+          setSessionChecked(true);
+        }
+      })
+      .catch(() => {
+        if (alive) setSessionChecked(true);
+      });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (alive) setSessionUser(toBadge(session?.user || null));
+    });
+    return () => {
+      alive = false;
+      listener?.subscription.unsubscribe();
+    };
+  }, []);
+
+  // Projetos do usuário (RLS decide o que volta; aqui entra só o que é seu).
+  useEffect(() => {
+    if (!isSupabaseConfigured()) return;
+    let alive = true;
+    listProjects()
+      .then((rows) => {
+        if (alive) setProjects(rows);
+      })
+      .catch(() => undefined);
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const handleCreateProject = useCallback(async (name: string): Promise<MareProject | string> => {
+    try {
+      const created = await createProject(name);
+      setProjects((current) => [created, ...current]);
+      return created;
+    } catch (cause) {
+      return cause instanceof Error ? cause.message : 'Não consegui criar o projeto.';
+    }
+  }, []);
+
+  const handleDeleteProject = useCallback(async (id: string) => {
+    await deleteProject(id);
+    setProjects((current) => current.filter((item) => item.id !== id));
+    setActiveProjectId((current) => (current === id ? null : current));
+    setView('chat');
+  }, []);
+
+  const handleSelectProject = useCallback((id: string | null) => {
+    setActiveProjectId(id);
+    setView(id ? 'board' : 'chat');
+  }, []);
 
   useEffect(() => {
     let id = '';
@@ -402,7 +517,7 @@ export default function MareWorkspace() {
     void uploadAttachment(file);
   }, [uploadAttachment]);
 
-  const send = useCallback(async (rawText: string, skillId?: MareSkillId) => {
+  const send = useCallback(async (rawText: string, skillId?: MareSkillId, projectId?: string | null) => {
     const text = rawText.trim();
     if ((!text && !attachments.some((item) => item.text)) || isSending) return;
     if (attachments.some((item) => item.progress < 1 && !item.error)) {
@@ -437,6 +552,7 @@ export default function MareWorkspace() {
     sounds.playEntrySound();
 
     let conversationId = state.activeId;
+    let conversationTitle = '';
     const userMessage: MareMessage = {
       id: uid('user'),
       role: 'user',
@@ -451,8 +567,9 @@ export default function MareWorkspace() {
       const nextMessages = [...(existing?.messages || []), userMessage];
       const nextConversation: MareConversation = existing
         ? { ...existing, messages: nextMessages, updatedAt: new Date().toISOString(), title: existing.messages.length ? existing.title : content.slice(0, 48) }
-         : { id: uid('chat'), title: content.slice(0, 48), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), messages: [userMessage] };
+         : { id: newConversationId(), title: content.slice(0, 48), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), messages: [userMessage] };
       conversationId = nextConversation.id;
+      conversationTitle = nextConversation.title;
       const conversations = existing
         ? current.conversations.map((item) => (item.id === existing.id ? nextConversation : item))
         : [...current.conversations, nextConversation];
@@ -473,6 +590,9 @@ export default function MareWorkspace() {
           model: settings.model,
           effort: settings.effort,
           source: 'mare-workspace',
+          conversationId,
+          projectId: projectId && isMareUuid(projectId) ? projectId : undefined,
+          conversationTitle,
         },
         {
           onStatus: (label) => {
@@ -569,13 +689,14 @@ export default function MareWorkspace() {
 
   const handleNew = useCallback(() => {
     const conversation: MareConversation = {
-      id: uid('chat'),
+      id: newConversationId(),
       title: 'Nova conversa',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       messages: [],
     };
     setState((current) => ({ ...current, conversations: [conversation, ...current.conversations], activeId: conversation.id, updatedAt: new Date().toISOString() }));
+    setView('chat');
     setInput('');
     setCommand(null);
     setAttachments([]);
@@ -583,9 +704,43 @@ export default function MareWorkspace() {
     setError('');
   }, []);
 
+  /** Card do kanban → a Mare desmonta a tarefa em passos, na conversa. */
+  const handleSendTaskToMare = useCallback(
+    (task: MareTask) => {
+      const context = task.details ? `\n\nContexto: ${task.details}` : '';
+      setView('chat');
+      void send(
+        `Monte uma lista de passos para concluir esta tarefa do quadro "${activeProject?.name || 'projeto'}": ${task.title}.${context}`,
+        'planejar',
+        task.projectId
+      );
+    },
+    [activeProject, send]
+  );
+
   const handleSelect = useCallback((id: string) => {
     setState((current) => ({ ...current, activeId: id }));
+    setView('chat');
     setError('');
+  }, []);
+
+  const handleSignOut = useCallback(async () => {
+    if (!isSupabaseConfigured()) return;
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+    } finally {
+      try {
+        // Privacidade em máquina compartilhada: o próximo login no mesmo
+        // navegador não herda conversas nem anexos da conta anterior.
+        window.localStorage.removeItem(STORAGE_KEY);
+        window.localStorage.removeItem('agentmare-client-id');
+      } catch {
+        // Sem localStorage, nada a limpar.
+      }
+      // Recarrega para o login: cookies limpos pelo signOut.
+      window.location.assign('/login');
+    }
   }, []);
 
   const handleRename = useCallback((id: string, title: string) => {
@@ -685,6 +840,17 @@ export default function MareWorkspace() {
           </div>
         </div>
 
+        <div className="mare-ws-projects">
+          <MareProjectsSection
+            projects={projects}
+            activeId={view === 'board' ? activeProjectId : null}
+            disabled={!isSupabaseConfigured() || (sessionChecked && !sessionUser)}
+            onCreate={handleCreateProject}
+            onSelect={handleSelectProject}
+            onDelete={handleDeleteProject}
+          />
+        </div>
+
         <ThreadList
           threads={threads}
           activeId={state.activeId || null}
@@ -706,6 +872,17 @@ export default function MareWorkspace() {
           <button type="button" onClick={() => setSettingsOpen((current) => !current)} aria-expanded={settingsOpen}>
             <Settings2 size={15} /> Preferências
           </button>
+          {sessionUser ? (
+            <>
+              <span className="mare-ws-account" title={`${sessionUser.name} · ${sessionUser.email}`}>
+                {sessionUser.avatar ? <img src={sessionUser.avatar} alt="" /> : <User size={14} />}
+                <span>{sessionUser.email || sessionUser.name}</span>
+              </span>
+              <button type="button" onClick={() => void handleSignOut()} aria-label="Sair da conta" title="Sair">
+                <LogOut size={15} />
+              </button>
+            </>
+          ) : null}
           <Link href="/" title="Voltar à apresentação" aria-label="Voltar à apresentação">
             <Home size={15} />
           </Link>
@@ -717,9 +894,35 @@ export default function MareWorkspace() {
           <div className="mare-ws-header-id">
             <MareAvatar size={36} />
             <div>
-              <h1>{activeConversation?.title || 'Nova conversa'}</h1>
+              <h1>
+                {view === 'board' && activeProject
+                  ? `Quadro · ${activeProject.name}`
+                  : activeConversation?.title || 'Nova conversa'}
+              </h1>
             </div>
           </div>
+          {activeProject ? (
+            <div className="mare-ws-view-switch" role="tablist" aria-label="Conversa ou quadro do projeto">
+              <button
+                type="button"
+                role="tab"
+                aria-current={view === 'chat' ? 'true' : undefined}
+                aria-selected={view === 'chat'}
+                onClick={() => setView('chat')}
+              >
+                Conversa
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-current={view === 'board' ? 'true' : undefined}
+                aria-selected={view === 'board'}
+                onClick={() => setView('board')}
+              >
+                Quadro
+              </button>
+            </div>
+          ) : null}
           {contextTokens ? (
             <span
               className="mare-ws-context"
@@ -733,6 +936,10 @@ export default function MareWorkspace() {
           ) : null}
         </header>
 
+        {view === 'board' && activeProject ? (
+          <MareKanban project={activeProject} onSendToMare={handleSendTaskToMare} />
+        ) : (
+        <>
         <div className="mare-ws-thread">
           <div className="mare-ws-thread-main">
           {messages.length === 0 && !isSending ? (
@@ -927,7 +1134,8 @@ export default function MareWorkspace() {
             }
           />
         </div>
-
+        </>
+        )}
       </section>
 
       {settingsOpen ? (

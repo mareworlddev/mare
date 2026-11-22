@@ -1,3 +1,4 @@
+import { guardAiRoute, jsonError } from '@/lib/supabase/api';
 import { mareWarn } from '@/lib/mare/log';
 import { pollinationsImageUrl } from '@/lib/pollinations';
 
@@ -8,16 +9,21 @@ export const maxDuration = 120;
 /**
  * Busca a imagem na Pollinations com a chave do servidor e devolve só os bytes.
  * A URL pública da conversa fica sem `POLLI_KEY`, o que ela nunca deve expor.
+ * Sessão validada no servidor + rate limit por usuário (mesmo contador da
+ * conversa): gerar imagem custa crédito.
  */
 export async function GET(request: Request) {
+  const guard = await guardAiRoute();
+  if (guard.mode === 'blocked') return guard.response;
+
   const url = new URL(request.url);
   const prompt = (url.searchParams.get('p') || '').slice(0, 400).trim();
   if (!prompt) {
     return new Response('Prompt ausente.', { status: 400 });
   }
 
-  const width = Number(url.searchParams.get('w')) || 1024;
-  const height = Number(url.searchParams.get('h')) || 1024;
+  const width = Math.min(2048, Math.max(256, Number(url.searchParams.get('w')) || 1024));
+  const height = Math.min(2048, Math.max(256, Number(url.searchParams.get('h')) || 1024));
 
   try {
     const upstream = await fetch(pollinationsImageUrl(prompt, { width, height }), { cache: 'no-store' });
@@ -32,6 +38,6 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     mareWarn('imagem', 'falha ao gerar imagem', error instanceof Error ? error.message : error);
-    return new Response('Não consegui gerar a imagem agora.', { status: 502 });
+    return jsonError(502, 'Não consegui gerar a imagem agora.');
   }
 }
