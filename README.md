@@ -81,7 +81,7 @@ confere o próprio trabalho antes de entregar.
 > Supabase configurado. Só precisa das chaves de IA.
 
 ```bash
-git clone https://github.com/PedroNunes0z/AgentMare.git
+git clone https://github.com/mareworlddev/mare.git
 cd AgentMare
 npm install
 cp .env.example .env.local   # preencha as chaves
@@ -113,7 +113,7 @@ Pronto: login com Google habilitado no Supabase Auth → Providers.
 
 ## ☁️ Deploy na Vercel
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FPedroNunes0z%2FAgentMare&env=NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,POLLI_KEY,CEREBRAS_API_KEY,FIRE_CRAWLER_API_KEY,NEXT_PUBLIC_SITE_URL)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fmareworlddev%2Fmare&env=NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,POLLI_KEY,CEREBRAS_API_KEY,FIRE_CRAWLER_API_KEY,NEXT_PUBLIC_SITE_URL)
 
 Em produção o login vira **obrigatório** (fail-closed): sem Supabase configurado, o workspace
 redireciona para `/login` e as rotas de IA respondem erro neutro — nada quebra aberto.
