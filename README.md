@@ -16,9 +16,6 @@ organiza conversas em projetos com kanban e pasta grama pela tela enquanto traba
 
 [![npm audit](https://img.shields.io/badge/npm%20audit-0%20vulnerabilidades-2EA043?style=flat-square)](https://docs.npmjs.com/cli/v10/commands/npm-audit)
 [![Auditoria de segurança](https://img.shields.io/badge/auditoria%20de%20seguran%C3%A7a-3%20rodadas-8250DF?style=flat-square)](#segurança)
-[![Feito com Mistral Vibe](https://img.shields.io/badge/feito%20com-Mistral%20Vibe-FA520F?style=flat-square&logo=mistralai&logoColor=white)](https://mistral.ai)
-
-<img src="docs/divisor-grama.png" width="205" alt="Tufo de grama em aquarela, onde a Mare pasta" />
 
 </div>
 
@@ -44,8 +41,6 @@ projetos, kanban, anexos e histórico sincronizado entre abas.
 | Projetos e kanban | Organize conversas em projetos, arraste cards e passe uma tarefa direto para a Mare executar |
 | Login com Google | OAuth com PKCE e sessão em cookies via Supabase, opcional no desenvolvimento local |
 | Pet vivo | A égua pasta, come maçã, bebe água e reage ao mouse, com sons e celebrações |
-
-<img src="docs/divisor-grama.png" width="160" alt="Grama em aquarela" />
 
 ## Como ela pensa
 
@@ -137,8 +132,6 @@ Em produção o login é obrigatório e o app opera em fail-closed: sem Supabase
 configurado, o workspace redireciona para `/login` e as rotas de IA respondem erro
 neutro. Nada fica aberto por acidente.
 
-<img src="docs/divisor-grama.png" width="160" alt="Grama em aquarela" />
-
 ## Segurança
 
 O projeto passou por três rodadas de auditoria adversária, sem vulnerabilidades
@@ -171,19 +164,8 @@ AgentMare/
 ├── mare-nimble/
 │   ├── runtime/               # executor, roteador, validador e memoria
 │   └── skills/                # as 11 skills da Mare
-├── supabase/migrations/       # rode na ordem 1 a 3
-└── docs/                      # arte deste README
+└── supabase/migrations/       # rode na ordem 1 a 3
 ```
-
-## Mistral
-
-A Mare foi construída com o Mistral Vibe, o agente de código da Mistral AI. O
-crédito aparece nos badges acima e no rodapé abaixo, e reconhece a ferramenta que
-ajudou a escrever e revisar este projeto.
-
-A Mistral AI não é um provedor de inferência em runtime nesta versão: os modelos
-que respondem na aplicação vêm de Pollinations e Cerebras, conforme a seção Stack.
-A referência à Mistral é, portanto, de autoria e ferramenta de desenvolvimento.
 
 ## Contribuindo
 
@@ -191,10 +173,8 @@ Pull requests são bem-vindas. Antes de abrir uma, rode `npm run lint` e
 `npm run test:nimble`. Para mudanças que envolvam banco, inclua ou ajuste a migration
 correspondente em `supabase/migrations/` e atualize `supabase/README.md`.
 
-<img src="docs/divisor-grama.png" width="205" alt="Tufo de grama em aquarela" />
-
 <div align="center">
 
-Mare, construída com aquarela e [Mistral Vibe](https://mistral.ai).
+Mare, construída com aquarela.
 
 </div>
