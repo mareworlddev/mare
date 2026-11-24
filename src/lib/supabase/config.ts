@@ -11,9 +11,21 @@ export interface SupabaseConfig {
   key: string;
 }
 
-function readEnv(...names: string[]): string {
+/**
+ * Leitura estática, obrigatória para o cliente: o Next só injeta uma variável
+ * `NEXT_PUBLIC_*` no bundle quando ela aparece escrita por extenso
+ * (`process.env.NEXT_PUBLIC_X`). Um acesso dinâmico (`process.env[nome]`) vira
+ * `{}` no navegador — o Supabase "sumia" no browser mesmo com as chaves certas.
+ */
+const ENV = {
+  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+} as const;
+
+function readEnv(...names: Array<keyof typeof ENV>): string {
   for (const name of names) {
-    const value = process.env[name];
+    const value = ENV[name];
     if (typeof value === 'string' && value.trim()) return value.trim();
   }
   return '';

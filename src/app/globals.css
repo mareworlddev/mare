@@ -19,6 +19,48 @@
   --mare-line: rgba(0, 14, 84, 0.1);
 }
 
+/* --------------------------------------------------------------------------
+   Borda animada do card de login (MagicCard). O arco de azul dá a volta no
+   traço; como o ângulo é uma Custom Property registrada, a animação é feita
+   pela própria CSS — sem rAF, funciona até em aba em segundo plano.
+   -------------------------------------------------------------------------- */
+@property --mare-sweep {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.mare-auth-card {
+  --mare-sweep: 0deg;
+  animation: mare-sweep 8s linear infinite;
+}
+
+@keyframes mare-sweep {
+  to {
+    --mare-sweep: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mare-auth-card {
+    animation: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Fundo da tela de login: a paisagem (bg.png) encosta no rodapé, centralizada,
+   e o `multiply` dissolve o branco da arte no fundo da página — sem emenda.
+   A altura vem da viewport, então ela fica sempre como faixa de horizonte.
+   -------------------------------------------------------------------------- */
+.mare-auth-scene {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background: url('/mare/bg.png') no-repeat bottom center / auto min(46vh, 460px);
+  mix-blend-mode: multiply;
+}
+
 *,
 *::before,
 *::after {

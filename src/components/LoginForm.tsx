@@ -71,13 +71,17 @@ export function LoginForm({ configured }: { configured: boolean }) {
   };
 
   return (
-    <main className="grid min-h-dvh place-items-center bg-mare-bg px-4 py-8">
-      <div className="w-full max-w-sm">
+    <main className="relative isolate grid min-h-dvh place-items-center bg-mare-bg px-4 py-8">
+      {/* Paisagem da Mare: encosta no rodapé da tela e some no branco do papel. */}
+      <div className="mare-auth-scene" aria-hidden="true" />
+      <div className="relative z-10 w-full max-w-sm">
         <CardShell>
           <MagicCard
             gradientSize={260}
             gradientColor="#c7d8f588"
-            className="rounded-2xl"
+            gradientFrom="#7aa2e3"
+            gradientTo="#0553af"
+            className="mare-auth-card rounded-2xl"
           >
             <CardHeader>
               <MareAvatar size={44} />
@@ -107,6 +111,10 @@ export function LoginForm({ configured }: { configured: boolean }) {
                 )}
                 {pending ? 'Abrindo o Google…' : 'Continuar com Google'}
               </button>
+
+              <p className="mt-3 font-ui text-[11.5px] leading-snug text-mare-muted/90">
+                Cancelou na janela do Google? Volte e escolha a conta de novo.
+              </p>
             </CardContent>
 
             <CardFooter>
@@ -116,16 +124,14 @@ export function LoginForm({ configured }: { configured: boolean }) {
             </CardFooter>
           </MagicCard>
         </CardShell>
-        <p className="mt-4 text-center font-ui text-[12px] text-mare-muted/80">
-          Cancelou na janela do Google? Volte e escolha a conta de novo.
-        </p>
       </div>
     </main>
   );
 }
 
+/** Só a sombra: a borda (animada) é do MagicCard, para não duplicar o traço. */
 function CardShell({ children }: { children: React.ReactNode }) {
-  return <div className="rounded-2xl border border-mare-line bg-white/70 shadow-[0_1px_2px_rgba(0,14,84,0.08),0_12px_40px_-12px_rgba(0,14,84,0.25)]">{children}</div>;
+  return <div className="rounded-2xl shadow-[0_1px_2px_rgba(0,14,84,0.08),0_12px_40px_-12px_rgba(0,14,84,0.25)]">{children}</div>;
 }
 
 function CardHeader({ children }: { children: React.ReactNode }) {

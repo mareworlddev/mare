@@ -12,6 +12,7 @@ import {
   useMotionTemplate,
   useMotionValue,
   useSpring,
+  useTransform,
 } from 'motion/react';
 
 import { cn } from '@/lib/utils';
@@ -51,6 +52,7 @@ export function MagicCard(props: MagicCardProps) {
   const orbX = useSpring(mouseX, { stiffness: 250, damping: 30, mass: 0.6 });
   const orbY = useSpring(mouseY, { stiffness: 250, damping: 30, mass: 0.6 });
   const orbVisible = useSpring(0, { stiffness: 300, damping: 35 });
+  const orbOpacity = useTransform(orbVisible, (value) => value * gradientOpacity);
 
   const modeRef = useRef(mode);
   const gradientSizeRef = useRef(gradientSize);
@@ -88,11 +90,12 @@ export function MagicCard(props: MagicCardProps) {
   }, [reset]);
 
   const background = useMotionTemplate`
-    linear-gradient(var(--background) 0 0) padding-box,
-    radial-gradient(${gradientSize}px circle at ${mouseX}px ${mouseY}px,
-      ${gradientFrom},
-      ${gradientTo},
-      var(--border) 100%
+    linear-gradient(var(--mare-white, #fff) 0 0) padding-box,
+    conic-gradient(from var(--mare-sweep, 0deg),
+      var(--mare-line, rgba(0, 14, 84, 0.1)) 0deg 214deg,
+      ${gradientFrom} 268deg,
+      ${gradientTo} 330deg,
+      var(--mare-line, rgba(0, 14, 84, 0.1)) 360deg
     ) border-box
   `;
 
@@ -107,7 +110,7 @@ export function MagicCard(props: MagicCardProps) {
       onPointerEnter={() => reset('enter')}
       style={{ background }}
     >
-      <div aria-hidden="true" className="absolute inset-px z-20 rounded-[inherit] bg-white" />
+      <div aria-hidden="true" className="absolute inset-px z-20 rounded-[inherit] bg-[var(--mare-white,#fff)]" />
 
       {mode === 'gradient' ? (
         <motion.div
@@ -115,12 +118,12 @@ export function MagicCard(props: MagicCardProps) {
           className="pointer-events-none absolute inset-px z-30 rounded-[inherit] opacity-0 transition-opacity duration-300 group-hover:opacity-100"
           style={{
             background: useMotionTemplate`
-              radial-gradient(${gradientSize}px circle at ${mouseX}px ${mouseY}px,
+              radial-gradient(${gradientSize}px circle at ${orbX}px ${orbY}px,
                 ${gradientColor},
                 transparent 100%
               )
             `,
-            opacity: gradientOpacity,
+            opacity: orbOpacity,
           }}
         />
       ) : null}
