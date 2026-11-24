@@ -11,6 +11,7 @@ import { firecrawlScrape, firecrawlSearch } from './firecrawl';
 import { providerChat, providerChatStream, providerForModel } from './llm';
 import { mareLog, mareTimer, mareWarn, previewText } from './log';
 import { buildConversationMessages, buildDirectSystemPrompt, inferSkill } from './prompts';
+import { planejarSuperpowers, superpowerSummaries, type SuperpowerSkill } from './superpowers';
 import type {
   MareChatBody,
   MareEffort,
@@ -283,7 +284,9 @@ async function runNimble(
   body: MareChatBody,
   keep: Collector,
   text: string,
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  superpowers?: SuperpowerSkill[],
+  summaries?: string[]
 ): Promise<{ content: string; reasoning: string; skills: string[]; usage?: Record<string, unknown> }> {
   const { emit } = keep;
   const enabled = body.settings?.enabledTools || [];
@@ -334,6 +337,8 @@ async function runNimble(
         hasDocuments: /\[Documento anexado:/i.test(text),
         projectNotes: body.notes,
         question: text,
+        superpowers,
+        superpowerSummaries: summaries,
       }),
     },
     ...attachEvidence(clipHistory(body.messages), evidence),
@@ -436,9 +441,28 @@ export async function runMareAgent(body: MareChatBody, emit: Emit, signal?: Abor
   emit({ type: 'status', text: statusForSkill(skill), state: 'walk' });
   emit({ type: 'thought', text: `Skill ${skill}: ${statusForSkill(skill).toLowerCase()}.` });
 
+  // /planejar usa o plugin Superpowers: orientação + descrições no início e
+  // corpo integral só das skills necessárias. Falha de registro é informada.
+  let superpowers: SuperpowerSkill[] | undefined;
+  let summaries: string[] | undefined;
+  if (skill === 'planejar' && model === MARE_NIMBLE_MODEL) {
+    try {
+      superpowers = planejarSuperpowers();
+      summaries = superpowerSummaries();
+      emit({ type: 'thought', text: `Superpowers: ${superpowers.map((item) => item.name).join(' → ')}.` });
+    } catch (error) {
+      emit({
+        type: 'thought',
+        text: `Superpowers indisponível: ${error instanceof Error ? error.message : String(error)}`,
+      });
+      superpowers = undefined;
+      summaries = undefined;
+    }
+  }
+
   const answer =
     model === MARE_NIMBLE_MODEL
-      ? await runNimble(body, keep, text, signal)
+      ? await runNimble(body, keep, text, signal, superpowers, summaries)
       : await runDirect(body, keep, skill, text, signal);
 
   if (!answer.content.trim()) throw new Error('A Mare não conseguiu formular uma resposta.');
@@ -454,6 +478,7 @@ export async function runMareAgent(body: MareChatBody, emit: Emit, signal?: Abor
     tokens,
     skill,
     reasoning: answer.reasoning || undefined,
+    ...(superpowers?.length ? { superpowers: superpowers.map((item) => item.name) } : {}),
     sources: keep.sources,
     toolCalls: keep.toolCalls,
   };

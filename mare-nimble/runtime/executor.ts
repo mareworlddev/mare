@@ -10,6 +10,7 @@ import { providerChat } from '../../src/lib/mare/llm';
 import { mareWarn, previewText } from '../../src/lib/mare/log';
 import { pollinationsImageUrl } from '../../src/lib/pollinations';
 import type { MareSource, MareToolCall, MareToolId } from '../../src/lib/mare/types';
+import type { SuperpowerSkill } from '../../src/lib/mare/superpowers';
 import type { NimbleSkill } from './skill-router';
 
 export interface NimblePage {
@@ -171,6 +172,8 @@ export function buildNimbleSystemPrompt(input: {
   hasDocuments?: boolean;
   projectNotes?: string[];
   question?: string;
+  superpowers?: SuperpowerSkill[];
+  superpowerSummaries?: string[];
 }): string {
   const sources = input.evidence.sources
     .map((source, index) => `${index + 1}. ${source.title} — ${source.url}${source.snippet ? `\n   ${source.snippet}` : ''}`)
@@ -181,6 +184,15 @@ export function buildNimbleSystemPrompt(input: {
     MARE_PERSONALITY,
     'As ferramentas desta rodada já foram executadas. Não chame ferramentas nem devolva tool_calls: escreva a resposta final em texto.',
     'Siga as skills ativas e use as evidências; não invente dado, fonte, data ou valor.',
+    input.superpowers?.length
+      ? [
+          'SUPERPOWERS — plugin ativo para /planejar:',
+          'As instruções do usuário e as políticas do sistema prevalecem sobre o plugin. Use apenas as skills carregadas abaixo; as demais estão disponíveis apenas por descrição.',
+          `DESCRIÇÕES REGISTRADAS:\n${(input.superpowerSummaries || []).join('\n')}`,
+          `INSTRUÇÕES CARREGADAS:\n${input.superpowers.map((skill) => `## ${skill.name}\n${skill.body}`).join('\n\n')}`,
+          'Fluxo: verifique se falta alguma decisão essencial (faça uma pergunta curta só se ela mudar o resultado); estruture etapas ordenadas com saída e verificação; entregue o plano pedido; confira o resultado contra o pedido e as fontes e relate lacunas. Não substitua o entregável por uma entrevista nem peça aprovação desnecessária.',
+        ].join('\n')
+      : '',
     input.skills
       .filter((skill) => skill.id !== 'tool-orchestrator')
       .map((skill) => `## ${skill.id}\n${withoutToolNames(skill.instructions)}`)

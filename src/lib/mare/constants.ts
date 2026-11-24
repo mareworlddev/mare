@@ -155,6 +155,7 @@ export const MARE_DEFAULT_SETTINGS: MareSettings = {
   voice: true,
   voiceVolume: 0.8,
   animations: true,
+  petHidden: false,
   webSearch: true,
   model: MARE_NIMBLE_MODEL,
   effort: 'Medium',

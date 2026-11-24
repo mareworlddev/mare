@@ -10,7 +10,7 @@
     "lint": "next lint",
     "postinstall": "next telemetry disable",
     "test:nimble": "node --experimental-strip-types --test mare-nimble/runtime/validator.test.ts",
-    "test": "node --experimental-strip-types --test mare-nimble/runtime/validator.test.ts src/lib/mare/embeddings.test.ts"
+    "test": "node --experimental-strip-types --test mare-nimble/runtime/validator.test.ts src/lib/mare/embeddings.test.ts src/lib/mare/superpowers.test.ts"
   },
   "engines": {
     "node": ">=18.0.0",

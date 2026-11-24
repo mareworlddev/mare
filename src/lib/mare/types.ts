@@ -59,6 +59,8 @@ export interface MareMessage {
   skill?: MareSkillId;
   label?: string;
   reasoning?: string;
+  /** Nomes das skills Superpowers efetivamente usadas nesta resposta. */
+  superpowers?: string[];
   sources?: MareSource[];
   toolCalls?: MareToolCall[];
 }
@@ -81,6 +83,7 @@ export interface MareSettings {
   voice: boolean;
   voiceVolume: number;
   animations: boolean;
+  petHidden: boolean;
   webSearch: boolean;
   model: string;
   effort: MareEffort;

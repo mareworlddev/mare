@@ -7,9 +7,11 @@ import type { MareFeedKind } from '@/lib/mare/types';
 type MarePetProps = {
   active: boolean;
   paused?: boolean;
+  hidden?: boolean;
   celebrateKey: number;
   onFeed?: (kind: MareFeedKind) => void;
   onRear?: () => void;
+  onHide?: () => void;
 };
 
 const WATCH_HEIGHT = 92;
@@ -29,7 +31,7 @@ const TREATS: Array<{ kind: MareFeedKind; src: string; alt: string }> = [
  * acontece. O conjunto inteiro se arrasta com o ponteiro para qualquer
  * canto da tela; dois cliques na Mare fazem ela voltar à sidebar.
  */
-export function MarePet({ active, paused = false, celebrateKey, onFeed, onRear }: MarePetProps) {
+export function MarePet({ active, paused = false, hidden = false, celebrateKey, onFeed, onRear, onHide }: MarePetProps) {
   const [column, setColumn] = useState(-1);
   const [feed, setFeed] = useState<{ kind: MareFeedKind; key: number } | null>(null);
   const [rearKey, setRearKey] = useState(0);
@@ -39,8 +41,11 @@ export function MarePet({ active, paused = false, celebrateKey, onFeed, onRear }
   const [treatDrag, setTreatDrag] = useState<{ kind: MareFeedKind; x: number; y: number } | null>(null);
   const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
   const [dragging, setDragging] = useState(false);
+  const [menu, setMenu] = useState<{ x: number; y: number } | null>(null);
 
   const dockRef = useRef<HTMLDivElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const holdTimerRef = useRef<number | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const suppressClickRef = useRef(false);
   const suppressTreatClickRef = useRef(false);
@@ -158,6 +163,12 @@ export function MarePet({ active, paused = false, celebrateKey, onFeed, onRear }
     const rect = dockRef.current?.getBoundingClientRect();
     if (!rect) return;
     dragRef.current = { startX: event.clientX, startY: event.clientY, origX: rect.left, origY: rect.top, w: rect.width, h: rect.height, moved: false };
+    // Segurar sem arrastar abre o menu; soltar ou mover cancela.
+    holdTimerRef.current = window.setTimeout(() => {
+      if (dragRef.current?.moved) return;
+      suppressClickRef.current = true;
+      setMenu({ x: event.clientX, y: event.clientY });
+    }, 550);
   };
 
   useEffect(() => {
@@ -169,6 +180,8 @@ export function MarePet({ active, paused = false, celebrateKey, onFeed, onRear }
       if (!drag.moved && Math.hypot(dx, dy) < DRAG_THRESHOLD) return;
       if (!drag.moved) {
         drag.moved = true;
+        if (holdTimerRef.current) window.clearTimeout(holdTimerRef.current);
+        holdTimerRef.current = null;
         suppressClickRef.current = true;
         setDragging(true);
       }
@@ -177,6 +190,8 @@ export function MarePet({ active, paused = false, celebrateKey, onFeed, onRear }
       setPos({ x, y });
     };
     const onUp = () => {
+      if (holdTimerRef.current) window.clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
       if (!dragRef.current) return;
       dragRef.current = null;
       setDragging(false);
@@ -230,6 +245,30 @@ export function MarePet({ active, paused = false, celebrateKey, onFeed, onRear }
   useEffect(
     () => () => {
       if (clickTimerRef.current) window.clearTimeout(clickTimerRef.current);
+    },
+    []
+  );
+
+  // Menu de ocultar: fecha ao clicar fora ou com Escape.
+  useEffect(() => {
+    if (!menu) return;
+    const onDown = (event: PointerEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) setMenu(null);
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setMenu(null);
+    };
+    window.addEventListener('pointerdown', onDown, { passive: true });
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('pointerdown', onDown);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [menu]);
+
+  useEffect(
+    () => () => {
+      if (holdTimerRef.current) window.clearTimeout(holdTimerRef.current);
     },
     []
   );
@@ -369,6 +408,11 @@ export function MarePet({ active, paused = false, celebrateKey, onFeed, onRear }
           className={`mare-pet-drop${dragOver ? ' is-over' : ''}`}
           aria-label={ariaLabel}
           onPointerDown={onPointerDown}
+          onContextMenu={(event) => {
+            event.preventDefault();
+            suppressClickRef.current = true;
+            setMenu({ x: event.clientX, y: event.clientY });
+          }}
           onClick={onDropClick}
         >
           {renderSprite()}
@@ -397,9 +441,37 @@ export function MarePet({ active, paused = false, celebrateKey, onFeed, onRear }
           {selectedTreat ? 'Agora clique na Mare para dar a ela' : 'Arraste a maçã ou a água até a Mare'}
         </p>
       ) : null}
+
+      {menu && typeof document !== 'undefined'
+        ? createPortal(
+            <div
+              ref={menuRef}
+              className="mare-pet-menu"
+              role="menu"
+              aria-label="Opções da Mare"
+              style={{
+                left: Math.min(menu.x, window.innerWidth - 170),
+                top: Math.min(menu.y, window.innerHeight - 56),
+              }}
+            >
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setMenu(null);
+                  onHide?.();
+                }}
+              >
+                Ocultar Mare
+              </button>
+            </div>,
+            document.body
+          )
+        : null}
     </div>
   );
 
+  if (hidden) return null;
   // Solto pela tela, o pet sai da sidebar: preso nela, ficava abaixo do chat
   // (mesmo z-index, pintado depois) e não aceitava mais o segundo arrasto.
   return pos ? createPortal(dock, document.body) : dock;

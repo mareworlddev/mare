@@ -870,7 +870,7 @@ export default function MareWorkspace() {
   );
 
   const handleSelect = useCallback((id: string) => {
-    setState((current) => ({ ...current, activeId: id }));
+    setState((current) => ({ ...current, activeId: id, updatedAt: new Date().toISOString() }));
     setView('chat');
     setError('');
   }, []);
@@ -931,13 +931,22 @@ export default function MareWorkspace() {
   }, [clientId, hydrated, remoteReady, remoteFailed, state]);
 
   const handleRename = useCallback((id: string, title: string) => {
-    setState((current) => ({ ...current, conversations: current.conversations.map((item) => item.id === id ? { ...item, title } : item) }));
+    setState((current) => ({
+      ...current,
+      conversations: current.conversations.map((item) => item.id === id ? { ...item, title } : item),
+      updatedAt: new Date().toISOString(),
+    }));
   }, []);
 
   const handleDelete = useCallback((id: string) => {
     setState((current) => {
       const conversations = current.conversations.filter((item) => item.id !== id);
-      return { ...current, conversations, activeId: current.activeId === id ? conversations[0]?.id || '' : current.activeId };
+      return {
+        ...current,
+        conversations,
+        activeId: current.activeId === id ? conversations[0]?.id || '' : current.activeId,
+        updatedAt: new Date().toISOString(),
+      };
     });
   }, []);
 
@@ -958,6 +967,7 @@ export default function MareWorkspace() {
       conversations: current.conversations.map((item) =>
         item.id === current.activeId ? { ...item, messages: item.messages.filter((message) => message.role !== 'assistant' || message.id !== item.messages[item.messages.length - 1]?.id) } : item
       ),
+      updatedAt: new Date().toISOString(),
     }));
     void send(lastUser.content, lastUser.skill);
   }, [messages, send]);
@@ -1086,6 +1096,8 @@ export default function MareWorkspace() {
           active={isSending}
           celebrateKey={celebrate}
           paused={!settings.animations}
+          hidden={settings.petHidden}
+          onHide={() => updateSettings({ petHidden: true })}
           onFeed={(kind) => (kind === 'eat' ? sounds.playEatSound() : sounds.playDrinkSound())}
           onRear={() => sounds.playCompletionSound()}
         />
@@ -1094,22 +1106,56 @@ export default function MareWorkspace() {
           <button type="button" onClick={() => { closeSidebar(); setSettingsOpen((current) => !current); }} aria-expanded={settingsOpen}>
             <Settings2 size={15} /> Preferências
           </button>
+          {sessionUser ? (
+            <div className="mare-ws-account-wrap">
+              <button
+                type="button"
+                className="mare-ws-account-button"
+                onClick={() => setAccountOpen((value) => !value)}
+                aria-expanded={accountOpen}
+                aria-label="Informações da conta"
+                title={`${sessionUser.name} · ${sessionUser.email}`}
+              >
+                {sessionUser.avatar ? (
+                  <img src={sessionUser.avatar} alt="" />
+                ) : (
+                  <span className="mare-ws-account-fallback">{sessionUser.name.slice(0, 1).toUpperCase()}</span>
+                )}
+                <ChevronDown size={12} aria-hidden="true" />
+              </button>
+              {accountOpen ? (
+                <div className="mare-ws-account-menu" role="dialog" aria-label="Informações da conta">
+                  <div className="mare-ws-account-who">
+                    {sessionUser.avatar ? (
+                      <img src={sessionUser.avatar} alt="" />
+                    ) : (
+                      <span className="mare-ws-account-fallback">{sessionUser.name.slice(0, 1).toUpperCase()}</span>
+                    )}
+                    <div>
+                      <strong>{sessionUser.name}</strong>
+                      <span>{sessionUser.email}</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="mare-ws-account-signout"
+                    onClick={() => {
+                      setAccountOpen(false);
+                      setSignOutOpen(true);
+                    }}
+                  >
+                    <LogOut size={14} aria-hidden="true" /> Sair da conta
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
       </aside>
 
       <section className="mare-ws-main">
         <header className="mare-ws-header">
           <div className="mare-ws-header-id">
-            <button
-              type="button"
-              className="mare-ws-menu"
-              onClick={() => setSidebarOpen((current) => !current)}
-              aria-expanded={sidebarOpen}
-              aria-controls="mare-ws-sidebar"
-              aria-label="Abrir conversas e projetos"
-            >
-              <Menu size={17} />
-            </button>
             <Link
               href="/"
               className="mare-ws-home-back"
@@ -1161,51 +1207,16 @@ export default function MareWorkspace() {
             </span>
           ) : null}
 
-          {sessionUser ? (
-            <div className="mare-ws-account-wrap">
-              <button
-                type="button"
-                className="mare-ws-account-button"
-                onClick={() => setAccountOpen((value) => !value)}
-                aria-expanded={accountOpen}
-                aria-label="Informações da conta"
-                title={`${sessionUser.name} · ${sessionUser.email}`}
-              >
-                {sessionUser.avatar ? (
-                  <img src={sessionUser.avatar} alt="" />
-                ) : (
-                  <span className="mare-ws-account-fallback">{sessionUser.name.slice(0, 1).toUpperCase()}</span>
-                )}
-                <span className="mare-ws-account-name">{sessionUser.name}</span>
-                <ChevronDown size={12} aria-hidden="true" />
-              </button>
-              {accountOpen ? (
-                <div className="mare-ws-account-menu" role="dialog" aria-label="Informações da conta">
-                  <div className="mare-ws-account-who">
-                    {sessionUser.avatar ? (
-                      <img src={sessionUser.avatar} alt="" />
-                    ) : (
-                      <span className="mare-ws-account-fallback">{sessionUser.name.slice(0, 1).toUpperCase()}</span>
-                    )}
-                    <div>
-                      <strong>{sessionUser.name}</strong>
-                      <span>{sessionUser.email}</span>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    className="mare-ws-account-signout"
-                    onClick={() => {
-                      setAccountOpen(false);
-                      setSignOutOpen(true);
-                    }}
-                  >
-                    <LogOut size={14} aria-hidden="true" /> Sair da conta
-                  </button>
-                </div>
-              ) : null}
-            </div>
-          ) : null}
+          <button
+            type="button"
+            className="mare-ws-menu"
+            onClick={() => setSidebarOpen((current) => !current)}
+            aria-expanded={sidebarOpen}
+            aria-controls="mare-ws-sidebar"
+            aria-label="Abrir conversas e projetos"
+          >
+            <Menu size={17} />
+          </button>
         </header>
 
         {view === 'board' && activeProject ? (
@@ -1264,6 +1275,11 @@ export default function MareWorkspace() {
                         {message.role === 'assistant' ? <MareAvatar size={20} /> : <User size={14} />}
                         <span>{message.role === 'assistant' ? (message.skill ? `skill: ${message.skill}` : 'Mare') : 'Você'}</span>
                       </div>
+                      {message.superpowers?.length ? (
+                        <div className="mare-ws-superpowers" aria-label="Superpowers usados">
+                          {message.superpowers.map((name) => <span key={name}>{name}</span>)}
+                        </div>
+                      ) : null}
                       {message.attachments?.length ? (
                         <div className="mare-ws-sent-files">
                           {message.attachments.map((doc, docIndex) => (
@@ -1462,6 +1478,7 @@ export default function MareWorkspace() {
           <h3>Interface</h3>
           <label><input type="checkbox" checked={settings.animations} onChange={(event) => updateSettings({ animations: event.target.checked })} /> Animações</label>
           <label><input type="checkbox" checked={settings.webSearch} onChange={(event) => updateSettings({ webSearch: event.target.checked })} /> Pesquisa na web</label>
+          <label><input type="checkbox" checked={!settings.petHidden} onChange={(event) => updateSettings({ petHidden: !event.target.checked })} /> Mostrar a Mare na tela</label>
 
           <h3>Playground</h3>
           <button type="button" className="mare-ws-settings-playground" onClick={() => setPlaygroundOpen(true)}>
