@@ -18,6 +18,7 @@ export interface SupabaseConfig {
  * `{}` no navegador — o Supabase "sumia" no browser mesmo com as chaves certas.
  */
 const ENV = {
+  NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
   NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
   NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
@@ -40,6 +41,43 @@ export function supabaseConfig(): SupabaseConfig | null {
 
 export function isSupabaseConfigured(): boolean {
   return supabaseConfig() !== null;
+}
+
+/**
+ * Origem canônica do site (NEXT_PUBLIC_SITE_URL), sem barra final. Vazio quando
+ * não configurada.
+ */
+export function canonicalOrigin(): string {
+  const value = readEnv('NEXT_PUBLIC_SITE_URL');
+  if (!value) return '';
+  try {
+    const url = new URL(value);
+    if (url.protocol === 'https:' || url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+      return url.origin;
+    }
+  } catch {
+    // URL torta no env: trata como ausente.
+  }
+  return '';
+}
+
+const LOCAL_HOST = /^(localhost|127\.0\.0\.1|\[::1\])$/;
+
+/**
+ * Para onde o Google devolve o código do OAuth. Fora da máquina local usamos a
+ * origem canônica, nunca o host que está na barra de endereço: sem isso, quem
+ * entra por uma URL de deploy (mare-…-…vercel.app) fica logado naquele host em
+ * vez do domínio do site.
+ */
+export function authCallbackUrl(currentOrigin: string): string {
+  let isLocal = false;
+  try {
+    isLocal = LOCAL_HOST.test(new URL(currentOrigin).hostname);
+  } catch {
+    isLocal = true; // origem estranha: não redireciona para fora
+  }
+  const base = isLocal ? currentOrigin : canonicalOrigin() || currentOrigin;
+  return `${base.replace(/\/$/, '')}/auth/callback`;
 }
 
 /**

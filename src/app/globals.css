@@ -57,7 +57,7 @@
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background: url('/mare/bg.png') no-repeat bottom center / auto min(46vh, 460px);
+  background: url('/mare/bg.png') no-repeat bottom center / auto min(52vh, 620px);
   mix-blend-mode: multiply;
 }
 
@@ -1692,13 +1692,86 @@ a {
   box-shadow: 0 0 0 4px rgba(5, 83, 175, 0.18);
 }
 
+/* Abaixo de 900px a sidebar vira gaveta aberta pela navbar: o workspace fica
+   numa coluna só e, sem isso, conversas, projetos e conta ficariam inalcançáveis. */
+.mare-ws-menu,
+.mare-ws-sidebar-close {
+  display: none;
+}
+
+.mare-ws-sidebar-close {
+  margin-left: auto;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(0, 14, 84, 0.14);
+  border-radius: 9px;
+  background: #fff;
+  color: #66718e;
+  cursor: pointer;
+}
+
+.mare-ws-sidebar-close:hover {
+  background: var(--mare-blue-soft, #eaf2ff);
+  color: var(--mare-blue, #0553af);
+}
+
+.mare-ws-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: rgba(8, 14, 32, 0.4);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+}
+
 @media (max-width: 900px) {
   .mare-ws-shell {
     grid-template-columns: 1fr;
   }
 
+  .mare-ws-menu {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 34px;
+    height: 34px;
+    border: 1px solid rgba(0, 14, 84, 0.14);
+    border-radius: 9px;
+    background: #fff;
+    color: #111a3a;
+    cursor: pointer;
+  }
+
+  .mare-ws-menu:hover {
+    background: var(--mare-blue-soft, #eaf2ff);
+    color: var(--mare-blue, #0553af);
+  }
+
+  .mare-ws-sidebar-close {
+    display: grid;
+  }
+
+  /* Fora da tela por padrão; `is-open` traz a gaveta para dentro. Fica
+     posicionada (fora do grid), então não ocupa coluna no layout. */
   .mare-ws-sidebar {
-    display: none;
+    display: flex;
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 60;
+    width: min(320px, 86vw);
+    transform: translateX(-100%);
+    visibility: hidden;
+    transition: transform 0.26s ease, visibility 0.26s ease;
+    box-shadow: 18px 0 48px -32px rgba(0, 14, 84, 0.55);
+  }
+
+  .mare-ws-sidebar.is-open {
+    transform: translateX(0);
+    visibility: visible;
   }
 
   .mare-ws-thread,
@@ -1715,6 +1788,12 @@ a {
   .mare-ws-empty {
     width: 100%;
     padding-top: 32px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mare-ws-sidebar {
+    transition: none;
   }
 }
 

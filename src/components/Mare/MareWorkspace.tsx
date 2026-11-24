@@ -13,6 +13,7 @@ import {
   Languages,
   ListChecks,
   LogOut,
+  Menu,
   PenLine,
   Route,
   Search,
@@ -20,6 +21,7 @@ import {
   Sparkles,
   User,
   Binary,
+  X,
   Image as ImageIcon,
 } from 'lucide-react';
 
@@ -281,6 +283,8 @@ export default function MareWorkspace() {
   const [loadedImages, setLoadedImages] = useState<Record<string, true>>({});
   const [streamStartedAt, setStreamStartedAt] = useState<number | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  /** Em telas estreitas a sidebar vira gaveta: sem isto ela fica inalcançável. */
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [playgroundOpen, setPlaygroundOpen] = useState(false);
   const [toolsOpen, setToolsOpen] = useState(false);
   const [sourcesOpen, setSourcesOpen] = useState(false);
@@ -746,6 +750,17 @@ export default function MareWorkspace() {
     setError('');
   }, []);
 
+  const closeSidebar = useCallback(() => setSidebarOpen(false), []);
+
+  // Gaveta da sidebar: Escape fecha, como qualquer painel sobreposto.
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSidebarOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [sidebarOpen]);
   const handleSignOut = useCallback(async () => {
     if (!isSupabaseConfigured()) return;
     try {
@@ -857,12 +872,33 @@ export default function MareWorkspace() {
     <main className="mare-ws-shell">
       <MareBackground />
 
-      <aside className="mare-ws-sidebar">
+      {sidebarOpen ? (
+        <button
+          type="button"
+          className="mare-ws-scrim"
+          aria-label="Fechar conversas e projetos"
+          onClick={closeSidebar}
+        />
+      ) : null}
+
+      <aside
+        id="mare-ws-sidebar"
+        className={`mare-ws-sidebar${sidebarOpen ? ' is-open' : ''}`}
+        aria-label="Conversas, projetos e preferências"
+      >
         <div className="mare-ws-brand">
           <MareAvatar size={42} />
           <div>
             <strong>Mare</strong>
           </div>
+          <button
+            type="button"
+            className="mare-ws-sidebar-close"
+            onClick={closeSidebar}
+            aria-label="Fechar conversas e projetos"
+          >
+            <X size={17} />
+          </button>
         </div>
 
         <div className="mare-ws-projects">
@@ -870,8 +906,14 @@ export default function MareWorkspace() {
             projects={projects}
             activeId={view === 'board' ? activeProjectId : null}
             disabled={!isSupabaseConfigured() || (sessionChecked && !sessionUser)}
-            onCreate={handleCreateProject}
-            onSelect={handleSelectProject}
+            onCreate={(name) => {
+              closeSidebar();
+              return handleCreateProject(name);
+            }}
+            onSelect={(id) => {
+              closeSidebar();
+              handleSelectProject(id);
+            }}
             onDelete={handleDeleteProject}
           />
         </div>
@@ -879,8 +921,14 @@ export default function MareWorkspace() {
         <ThreadList
           threads={threads}
           activeId={state.activeId || null}
-          onSelect={handleSelect}
-          onNew={handleNew}
+          onSelect={(id) => {
+            closeSidebar();
+            handleSelect(id);
+          }}
+          onNew={() => {
+            closeSidebar();
+            handleNew();
+          }}
           onRename={handleRename}
           onDelete={handleDelete}
         />
@@ -894,7 +942,7 @@ export default function MareWorkspace() {
         />
 
         <div className="mare-ws-sidebar-foot">
-          <button type="button" onClick={() => setSettingsOpen((current) => !current)} aria-expanded={settingsOpen}>
+          <button type="button" onClick={() => { closeSidebar(); setSettingsOpen((current) => !current); }} aria-expanded={settingsOpen}>
             <Settings2 size={15} /> Preferências
           </button>
           {sessionUser ? (
@@ -917,6 +965,16 @@ export default function MareWorkspace() {
       <section className="mare-ws-main">
         <header className="mare-ws-header">
           <div className="mare-ws-header-id">
+            <button
+              type="button"
+              className="mare-ws-menu"
+              onClick={() => setSidebarOpen((current) => !current)}
+              aria-expanded={sidebarOpen}
+              aria-controls="mare-ws-sidebar"
+              aria-label="Abrir conversas e projetos"
+            >
+              <Menu size={17} />
+            </button>
             <MareAvatar size={36} />
             <div>
               <h1>

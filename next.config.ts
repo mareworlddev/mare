@@ -4,14 +4,20 @@ import type { NextConfig } from 'next';
  * CSP fechada: fontes e estilos são self-hosted (@fontsource), imagens vêm de
  * hosts https conhecidos, o navegador só fala com a própria origem e com o
  * projeto Supabase. O dev recebe 'unsafe-eval'/'ws:' para o HMR do Next.
+ *
+ * Google Fonts entra só em style/font: extensões de navegador e a toolbar da
+ * Vercel injetam um <link> do Inter na página e caíam no bloqueio (font-src
+ * 'self' data:), enchendo o console. O app não usa esses hosts — tudo é
+ * @fontsource no próprio pacote —, então nada muda no desenho; script-src,
+ * connect-src e o resto seguem fechados.
  */
 const isDev = process.env.NODE_ENV === 'development';
 const csp = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ''}`,
-  "style-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "img-src 'self' data: blob: https://*.googleusercontent.com",
-  "font-src 'self' data:",
+  "font-src 'self' data: https://fonts.gstatic.com",
   `connect-src 'self' https://*.supabase.co${isDev ? ' ws:' : ''}`,
   "worker-src 'self' blob:",
   "media-src 'self' blob:",

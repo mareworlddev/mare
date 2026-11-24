@@ -8,6 +8,7 @@ import { Loader2, TriangleAlert } from 'lucide-react';
 import { MagicCard } from '@/components/ui/magic-card';
 import { MareAvatar } from '@/components/Mare/MareIcon';
 import { createClient } from '@/lib/supabase/client';
+import { authCallbackUrl } from '@/lib/supabase/config';
 
 interface OAuthProblem {
   title: string;
@@ -52,7 +53,7 @@ export function LoginForm({ configured }: { configured: boolean }) {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
+          redirectTo: authCallbackUrl(window.location.origin),
           queryParams: { prompt: 'select_account' },
         },
       });
