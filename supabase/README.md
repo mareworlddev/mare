@@ -10,7 +10,9 @@ o código já está pronto para funcionar quando terminar.
    1. `supabase/migrations/0001_tables.sql` — tabelas, índices e triggers (dono forçado/imutável).
    2. `supabase/migrations/0002_security.sql` — RLS, grants por coluna, revogação de `anon` e o RPC `check_rate_limit`.
    3. `supabase/migrations/0003_storage.sql` — bucket privado `mare-state` (histórico sincronizado) com política de caminho exato por usuário.
-3. Confirme no **Table Editor**: `projects`, `tasks`, `chats`, `messages`, `ai_rate_limits` — e em **Storage**: o bucket `mare-state`.
+   4. `supabase/migrations/0004_notes.sql` — notas/lembres por projeto (`project_notes`).
+   5. `supabase/migrations/0005_pgvector.sql` — extensão `vector`, `mare_vector_memory` e o RPC `match_mare_vectors` (cache semântico e skills).
+3. Confirme no **Table Editor**: `projects`, `tasks`, `project_notes`, `chats`, `messages`, `mare_vector_memory`, `ai_rate_limits` — e em **Storage**: o bucket `mare-state`.
 
 As migrações são idempotentes: rodar de novo não quebra.
 
@@ -48,7 +50,8 @@ privado `mare-state` do próprio Supabase, criado por `0003_storage.sql`.
 
 | Camada | O quê |
 |---|---|
-| RLS + `force` | `projects`, `tasks`, `chats`, `messages` sob `auth.uid() = user_id` em `USING` (leitura) **e** `WITH CHECK` (escrita). `ai_rate_limits` é só `enable` (sem `force`): o dono da tabela precisa passar para o `check_rate_limit` SECURITY DEFINER funcionar; clientes seguem negados (zero grants) |
+| RLS + `force` | `projects`, `tasks`, `project_notes`, `chats`, `messages`, `mare_vector_memory` sob `auth.uid() = user_id` em `USING` (leitura) **e** `WITH CHECK` (escrita). `ai_rate_limits` é só `enable` (sem `force`): o dono da tabela precisa passar para o `check_rate_limit` SECURITY DEFINER funcionar; clientes seguem negados (zero grants) |
+| pgvector | `match_mare_vectors` é SECURITY INVOKER: filtra por `auth.uid()` e aceita `kinds` (`qa`, `skill`, `note`). Cache só responde com similaridade ≥ 0.95, mesmo modelo e mesmo projeto; documentos e `/pesquisar` nunca entram no cache |
 | IDOR | `WITH CHECK` valida o dono do pai: tarefa→projeto, mensagem→chat, chat→projeto |
 | Imutabilidade | `user_id` sai da sessão via trigger (insert) e trava no update; `created_at/updated_at` fora dos grants |
 | `anon` | `REVOKE ALL` nas tabelas; grants por coluna para `authenticated` |

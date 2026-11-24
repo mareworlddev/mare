@@ -90,7 +90,7 @@ const normalize = (text: string) =>
  * Escolhe no máximo 4 skills: as marcadas `always`, o comando explícito
  * e as que casam com um gatilho no texto, na ordem de prioridade.
  */
-export function routeSkills(text: string, command?: string): NimbleSkill[] {
+export function routeSkills(text: string, command?: string, hints: string[] = []): NimbleSkill[] {
   const skills = allSkills();
   if (!skills.length) return [];
 
@@ -105,7 +105,9 @@ export function routeSkills(text: string, command?: string): NimbleSkill[] {
     .filter((skill) => skill.triggers.some((trigger) => normalized.includes(normalize(trigger))))
     .map((skill) => skill.id);
 
+  const hinted = new Set(hints);
   return skills
     .filter((skill) => selected.has(skill.id) || matched.includes(skill.id))
+    .sort((a, b) => Number(hinted.has(b.id)) - Number(hinted.has(a.id)) || a.priority - b.priority)
     .slice(0, 4);
 }

@@ -69,6 +69,8 @@ export interface MareConversation {
   createdAt: string;
   updatedAt: string;
   messages: MareMessage[];
+  /** Conversa pertencente a um projeto: carrega as notas dele como contexto. */
+  projectId?: string;
 }
 
 export interface MareSettings {
@@ -115,6 +117,10 @@ export interface MareChatBody {
   projectId?: string;
   /** Título da conversa no cliente (renomear acompanha o espelho). */
   conversationTitle?: string;
+  /** Notas/lembres do projeto, injetados no prompt sem aparecer no chat. */
+  notes?: string[];
+  /** Sugestões de skills vindas da busca vetorial; só reforçam as existentes. */
+  skillHints?: string[];
 }
 
 export type MareStreamEvent =

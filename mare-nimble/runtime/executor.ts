@@ -1,4 +1,10 @@
-import { MARE_NIMBLE_ORCHESTRATOR } from '../../src/lib/mare/constants';
+import {
+  MARE_DOCUMENT_GUIDE,
+  MARE_NIMBLE_ORCHESTRATOR,
+  MARE_PERSONALITY,
+  MARE_RISK_CLOSING,
+} from '../../src/lib/mare/constants';
+import { selectRelevantNotes } from '../../src/lib/mare/prompts';
 import { firecrawlScrape, firecrawlSearch } from '../../src/lib/mare/firecrawl';
 import { providerChat } from '../../src/lib/mare/llm';
 import { mareWarn, previewText } from '../../src/lib/mare/log';
@@ -162,25 +168,31 @@ export function buildNimbleSystemPrompt(input: {
   plan: string;
   evidence: NimbleEvidence;
   imageUrl?: string | null;
+  hasDocuments?: boolean;
+  projectNotes?: string[];
+  question?: string;
 }): string {
   const sources = input.evidence.sources
     .map((source, index) => `${index + 1}. ${source.title} — ${source.url}${source.snippet ? `\n   ${source.snippet}` : ''}`)
     .join('\n');
+  const notes = selectRelevantNotes(input.projectNotes, input.question || '');
 
   return [
-    'Você é a Mare, escrevendo a resposta final em português brasileiro.',
-    'Seu nome é Mare. Nunca se apresente como ChatGPT, GPT ou produto de outra empresa.',
+    MARE_PERSONALITY,
     'As ferramentas desta rodada já foram executadas. Não chame ferramentas nem devolva tool_calls: escreva a resposta final em texto.',
-    'Siga as skills ativas, use as evidências e não invente dado, fonte, data ou valor.',
+    'Siga as skills ativas e use as evidências; não invente dado, fonte, data ou valor.',
     input.skills
       .filter((skill) => skill.id !== 'tool-orchestrator')
       .map((skill) => `## ${skill.id}\n${withoutToolNames(skill.instructions)}`)
       .join('\n\n'),
+    notes.length ? `CONTEXTO DO PROJETO (uso restrito a esta conversa):\n${notes.join('\n- ')}` : '',
+    input.hasDocuments ? MARE_DOCUMENT_GUIDE : '',
     input.plan ? `PLANO DO ORQUESTRADOR:\n${input.plan}` : '',
     `EVIDÊNCIAS:\n${sources || 'nenhuma fonte coletada'}`,
     input.evidence.pages.length
       ? `TRECHOS LIDOS:\n${input.evidence.pages.map((page) => `${page.url}\n${page.text.slice(0, 4000)}`).join('\n\n')}`
       : '',
+    MARE_RISK_CLOSING,
     input.imageUrl
       ? [
           `IMAGEM JÁ GERADA PELO MODELO ${'microsoft/mai-image-2.7-flash'}: ${input.imageUrl}`,

@@ -1,4 +1,11 @@
-import { MARE_NIMBLE_MODEL, MARE_NIMBLE_WRITER, MARE_STATUS } from './constants';
+import {
+  MARE_DOCUMENT_GUIDE,
+  MARE_NIMBLE_MODEL,
+  MARE_NIMBLE_WRITER,
+  MARE_PERSONALITY,
+  MARE_RISK_CLOSING,
+  MARE_STATUS,
+} from './constants';
 import type { MareChatMessage, MareToolDefinition } from './api';
 import { firecrawlScrape, firecrawlSearch } from './firecrawl';
 import { providerChat, providerChatStream, providerForModel } from './llm';
@@ -157,8 +164,14 @@ async function runDirect(
   // a ferramenta, o agente executa e o resultado volta como mensagem `tool`.
   const wantsImage = imageIntent(text, skill);
   const system =
-    buildDirectSystemPrompt({ skill, sources: keep.sources, webSearch: wantsWeb }) +
-    (wantsImage ? IMAGE_TOOL_HINT : '');
+    buildDirectSystemPrompt({
+      skill,
+      sources: keep.sources,
+      webSearch: wantsWeb,
+      hasDocuments: /\[Documento anexado:/i.test(text),
+      projectNotes: body.notes,
+      question: text,
+    }) + (wantsImage ? IMAGE_TOOL_HINT : '');
   const messages: MareChatMessage[] = buildConversationMessages(
     body.messages.map((message) => ({ ...message, content: message.content.replace(/^\s*\/([\w-]+)\s*/, '').trim() })),
     system
@@ -274,7 +287,7 @@ async function runNimble(
 ): Promise<{ content: string; reasoning: string; skills: string[]; usage?: Record<string, unknown> }> {
   const { emit } = keep;
   const enabled = body.settings?.enabledTools || [];
-  const skills = routeSkills(text, body.skill);
+  const skills = routeSkills(text, body.skill, body.skillHints);
   if (!skills.length) throw new Error('Skills do mare-nimble indisponíveis.');
 
   const ids = skills.map((skill) => skill.id);
@@ -311,7 +324,18 @@ async function runNimble(
       : null;
 
   const messages = [
-    { role: 'system' as const, content: buildNimbleSystemPrompt({ skills, plan, evidence, imageUrl }) },
+    {
+      role: 'system' as const,
+      content: buildNimbleSystemPrompt({
+        skills,
+        plan,
+        evidence,
+        imageUrl,
+        hasDocuments: /\[Documento anexado:/i.test(text),
+        projectNotes: body.notes,
+        question: text,
+      }),
+    },
     ...attachEvidence(clipHistory(body.messages), evidence),
   ];
   const profile = effortProfile(body.effort);
@@ -340,8 +364,12 @@ async function runNimble(
       messages: [
         {
           role: 'system',
-          content:
-            'Você é a Mare. Escreva a resposta final em português brasileiro usando apenas o material fornecido. Não chame ferramentas.',
+          content: [
+            MARE_PERSONALITY,
+            'Escreva a resposta final em português brasileiro usando apenas o material fornecido. Não chame ferramentas.',
+            /\[Documento anexado:/i.test(text) ? MARE_DOCUMENT_GUIDE : '',
+            MARE_RISK_CLOSING,
+          ].filter(Boolean).join('\n\n'),
         },
         ...attachEvidence(clipHistory(body.messages), evidence),
       ],

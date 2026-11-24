@@ -4,7 +4,9 @@ import { guardAiRoute, jsonError } from '@/lib/supabase/api';
 import { isMareUuid, mirrorConversation, type MirrorMessage } from '@/lib/mare/mirror';
 import { runMareAgent } from '@/lib/mare/agent';
 import { mareLog, mareWarn } from '@/lib/mare/log';
-import type { MareChatBody, MareChatHistoryInput, MareEffort, MareSkillId, MareStreamEvent, MareToolId } from '@/lib/mare/types';
+import { MARE_NIMBLE_MODEL } from '@/lib/mare/constants';
+import { lookupCache, rememberCache, retrieveProjectNotes, retrieveSkillHints, seedSkillVectors } from '@/lib/mare/vectorMemory';
+import type { MareChatBody, MareChatHistoryInput, MareEffort, MareMessage, MareSkillId, MareStreamEvent, MareToolId } from '@/lib/mare/types';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -20,6 +22,38 @@ const MAX_BODY_BYTES = 2_000_000;
 
 function sse(event: MareStreamEvent) {
   return `data: ${JSON.stringify(event)}\n\n`;
+}
+
+function cachedMessage(answer: string): MareMessage {
+  const tokens = Math.ceil(answer.length / 4);
+  return {
+    id: `mare-cache-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    role: 'assistant',
+    content: answer,
+    createdAt: new Date().toISOString(),
+    tokens: { input: 0, output: tokens, total: tokens, estimated: true },
+  };
+}
+
+function cachedStream(message: MareMessage) {
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(encoder.encode(sse({ type: 'thought', text: 'Cache semântico: resposta já calculada.' })));
+      controller.enqueue(encoder.encode(sse({ type: 'message', message })));
+      controller.enqueue(encoder.encode(sse({ type: 'done' })));
+      controller.close();
+    },
+  });
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream; charset=utf-8',
+      'Cache-Control': 'no-cache, no-transform',
+      Connection: 'keep-alive',
+      'X-Accel-Buffering': 'no',
+      'X-Mare-Cache': 'hit',
+    },
+  });
 }
 
 function validMirrorId(value: unknown): string | undefined {
@@ -66,6 +100,12 @@ function normalizeBody(value: any): MareChatBody {
       typeof value?.conversationTitle === 'string' && value.conversationTitle.trim()
         ? value.conversationTitle.trim().slice(0, 200)
         : undefined,
+    notes: Array.isArray(value?.notes)
+      ? value.notes.filter((note: unknown): note is string => typeof note === 'string').slice(0, 12).map((note: string) => note.slice(0, 600))
+      : undefined,
+    skillHints: Array.isArray(value?.skillHints)
+      ? value.skillHints.filter((id: unknown): id is string => typeof id === 'string').slice(0, 4)
+      : undefined,
   };
 }
 
@@ -103,6 +143,33 @@ export async function POST(request: Request) {
 
   mareLog('rota', `POST · skill=${body.skill || 'auto'} · mensagens=${body.messages.length}`);
 
+  const question = [...body.messages].reverse().find((message) => message.role === 'user')?.content || '';
+  const responseModel = body.model || MARE_NIMBLE_MODEL;
+  // Documento e pesquisa podem mudar a qualquer momento: cache aqui responderia
+  // com material antigo como se fosse o atual.
+  const cacheable = !/\[Documento anexado:/i.test(question) && body.skill !== 'pesquisar';
+  let cached: string | null = null;
+  if (guard.mode === 'authenticated') {
+    try {
+      await seedSkillVectors(guard.supabase);
+      body.skillHints = await retrieveSkillHints(guard.supabase, question);
+      if (body.projectId) {
+        const notes = await retrieveProjectNotes(guard.supabase, body.projectId, question);
+        if (notes.length) body.notes = [...notes, ...(body.notes || [])].slice(0, 12);
+      }
+      if (cacheable) cached = await lookupCache(guard.supabase, question, responseModel, body.skill, body.projectId);
+    } catch (error) {
+      // pgvector é melhor esforço: a rodada segue normalmente sem ele.
+      mareWarn('pgvector', 'preparação falhou', error instanceof Error ? error.message : error);
+    }
+  }
+  if (cached) {
+    mareLog('rota', `cache semântico · skill=${body.skill || 'auto'}`);
+    const message = cachedMessage(cached);
+    if (body.stream === false) return NextResponse.json({ message, text: cached, sources: [] });
+    return cachedStream(message);
+  }
+
   /**
    * Espelho durável da rodada em chats/messages, com o client autenticado
    * (RLS decide). Best-effort — conversa continua funcionando sem Supabase.
@@ -136,6 +203,12 @@ export async function POST(request: Request) {
   if (body.stream === false) {
     try {
       const { message } = await runMareAgent(body, () => undefined, transport.signal);
+      if (guard.mode === 'authenticated' && cacheable) {
+        void rememberCache(guard.supabase, {
+          question, answer: message.content, model: responseModel,
+          skill: message.skill, projectId: body.projectId,
+        });
+      }
       mirrorRound({ id: message.id, role: 'assistant', content: message.content });
       return NextResponse.json({ message, text: message.content, sources: message.sources });
     } catch (error) {
@@ -170,6 +243,9 @@ export async function POST(request: Request) {
       (async () => {
         try {
           const { message } = await runMareAgent(body, send, transport.signal);
+          if (guard.mode === 'authenticated') {
+            void rememberCache(guard.supabase, { question, answer: message.content, model: responseModel, skill: message.skill });
+          }
           mirrorRound({ id: message.id, role: 'assistant', content: message.content });
         } catch (error) {
           // Texto neutro no evento; detalhe só no console do servidor.

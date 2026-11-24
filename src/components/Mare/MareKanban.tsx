@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Library, Loader2, Plus, Sparkles, Trash2, X } from 'lucide-react';
 
+import { MareProjectNotes } from './MareProjectNotes';
 import {
   MARE_STATUS_LABELS,
   MARE_TASK_STATUSES,
@@ -10,6 +11,7 @@ import {
   deleteTask,
   listTasks,
   updateTask,
+  type MareNote,
   type MareProject,
   type MareTask,
   type MareTaskStatus,
@@ -17,15 +19,18 @@ import {
 
 type Props = {
   project: MareProject;
-  onSendToMare: (task: MareTask) => void;
+  notes: MareNote[];
+  onCreateNote: (content: string) => Promise<void>;
+  onDeleteNote: (id: string) => Promise<void>;
+  onSendToMare: (tasks: MareTask[]) => void;
 };
 
 /**
- * Kanban do projeto: 4 colunas, cards arrastáveis (drag & drop nativo) e um
- * botão por card para mandar o card à Mare (ela desenha a lista de passos).
+ * Kanban do projeto: 4 colunas, cards arrastáveis (drag & drop nativo),
+ * notas/lembres e seleção múltipla de cards para mandar à Mare.
  * Tudo persiste no Supabase sob a RLS — o pente fino fica no banco.
  */
-export function MareKanban({ project, onSendToMare }: Props) {
+export function MareKanban({ project, notes, onCreateNote, onDeleteNote, onSendToMare }: Props) {
   const [tasks, setTasks] = useState<MareTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -33,6 +38,7 @@ export function MareKanban({ project, onSendToMare }: Props) {
   const [dropTarget, setDropTarget] = useState<MareTaskStatus | null>(null);
   const [openComposer, setOpenComposer] = useState<MareTaskStatus | null>(null);
   const [composerText, setComposerText] = useState('');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const draggingRef = useRef('');
 
   const load = useCallback(async (projectId: string) => {
@@ -117,12 +123,27 @@ export function MareKanban({ project, onSendToMare }: Props) {
   const removeTask = async (id: string) => {
     const before = tasks;
     setTasks((current) => current.filter((task) => task.id !== id));
+    setSelectedIds((current) => current.filter((item) => item !== id));
     try {
       await deleteTask(id);
     } catch (cause) {
       setTasks(before);
       setError(cause instanceof Error ? cause.message : 'Não consegui excluir a tarefa.');
     }
+  };
+
+  const togglePick = (id: string) => {
+    setSelectedIds((current) =>
+      current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
+    );
+  };
+
+  // Na ordem do quadro, não na ordem em que o usuário clicou.
+  const picked = tasks.filter((task) => selectedIds.includes(task.id));
+  const sendPicked = () => {
+    if (!picked.length) return;
+    onSendToMare(picked);
+    setSelectedIds([]);
   };
 
   return (
@@ -153,6 +174,7 @@ export function MareKanban({ project, onSendToMare }: Props) {
 
       {!loading && !error ? (
         <>
+          <MareProjectNotes notes={notes} onCreate={onCreateNote} onDelete={onDeleteNote} />
           <div className="mare-ws-board-grid">
             {MARE_TASK_STATUSES.map((status) => {
               const column = tasks.filter((task) => task.status === status).sort((a, b) => a.position - b.position);
@@ -208,7 +230,9 @@ export function MareKanban({ project, onSendToMare }: Props) {
                           dropOn(status, task.id);
                         }}
                         className={
-                          'mare-ws-card' + (draggingId === task.id ? ' is-dragging' : '')
+                          'mare-ws-card' +
+                          (draggingId === task.id ? ' is-dragging' : '') +
+                          (selectedIds.includes(task.id) ? ' is-selected' : '')
                         }
                       >
                         <p className="mare-ws-card-title" title={task.title}>
@@ -235,16 +259,14 @@ export function MareKanban({ project, onSendToMare }: Props) {
                               </option>
                             ))}
                           </select>
-                          <button
-                            type="button"
-                            title="Mandar para a Mare: ela monta a lista de passos"
-                            aria-label={`Mandar ${task.title} para a Mare`}
-                            onClick={() => onSendToMare(task)}
-                            className="mare-ws-card-mare"
-                          >
-                            <Sparkles className="size-3.5" aria-hidden="true" />
-                            Mare
-                          </button>
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.includes(task.id)}
+                            onChange={() => togglePick(task.id)}
+                            title="Selecionar para mandar à Mare"
+                            aria-label={`Selecionar ${task.title} para a Mare`}
+                            className="mare-ws-card-pick"
+                          />
                           <button
                             type="button"
                             aria-label={`Excluir ${task.title}`}
@@ -300,12 +322,25 @@ export function MareKanban({ project, onSendToMare }: Props) {
             })}
           </div>
 
+          {picked.length ? (
+            <div className="mare-ws-board-actions" role="group" aria-label="Enviar cards selecionados">
+              <Sparkles className="size-4 text-mare-blue" aria-hidden="true" />
+              <strong>{picked.length} card{picked.length > 1 ? 's' : ''} selecionado{picked.length > 1 ? 's' : ''}</strong>
+              <button type="button" className="mare-ws-send-mare" onClick={sendPicked}>
+                Mandar para a Mare
+              </button>
+              <button type="button" className="mare-ws-clear-pick" onClick={() => setSelectedIds([])}>
+                Limpar
+              </button>
+            </div>
+          ) : null}
+
           {tasks.length === 0 ? (
             <div className="mare-ws-board-hint">
               <Library className="size-4 text-mare-blue" aria-hidden="true" />
               <p>
-                Quadro limpo. Crie cards com “＋” e mande um deles para a Mare quando quiser que ela
-                desmonte a tarefa em passos.
+                Quadro limpo. Crie cards com “＋”, selecione quantos quiser e mande para a Mare
+                desmontar as tarefas em passos.
               </p>
             </div>
           ) : null}

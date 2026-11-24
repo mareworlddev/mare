@@ -16,7 +16,8 @@ export type MareLogScope =
   | 'imagem'
   | 'catalogo'
   | 'sprite'
-  | 'estado';
+  | 'estado'
+  | 'pgvector';
 
 function prefix(scope: MareLogScope) {
   return `[Mare][${scope}]`;

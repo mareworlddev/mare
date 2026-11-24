@@ -40,3 +40,6 @@ next-env.d.ts
 
 # logs locais
 *.log
+
+# estado local do agente (memória do workspace)
+/.workbuddy-ai/

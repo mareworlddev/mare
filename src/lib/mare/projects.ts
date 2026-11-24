@@ -37,6 +37,14 @@ export interface MareTask {
   updatedAt: string;
 }
 
+/** Anotação/lembrete do usuário dentro de um projeto. */
+export interface MareNote {
+  id: string;
+  projectId: string;
+  content: string;
+  createdAt: string;
+}
+
 function requireSupabase(): SupabaseClient {
   if (!isSupabaseConfigured()) {
     console.warn('mare:projects Supabase ausente — defina NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY.');
@@ -167,4 +175,43 @@ export async function deleteTask(id: string): Promise<void> {
   const supabase = requireSupabase();
   const { error } = await supabase.from('tasks').delete().eq('id', id);
   if (error) throw friendlySupabaseError(error, 'Não consegui excluir a tarefa.');
+}
+
+function noteOf(row: any): MareNote {
+  return {
+    id: String(row.id),
+    projectId: String(row.project_id),
+    content: String(row.content),
+    createdAt: String(row.created_at),
+  };
+}
+
+export async function listNotes(projectId: string): Promise<MareNote[]> {
+  const supabase = requireSupabase();
+  const { data, error } = await supabase
+    .from('project_notes')
+    .select('id, project_id, content, created_at')
+    .eq('project_id', projectId)
+    .order('created_at', { ascending: false });
+  if (error) throw friendlySupabaseError(error, 'Não consegui carregar as notas.');
+  return (data || []).map(noteOf);
+}
+
+export async function createNote(projectId: string, content: string): Promise<MareNote> {
+  const supabase = requireSupabase();
+  const clean = content.trim().slice(0, 2000);
+  if (!clean) throw new Error('Escreva a anotação.');
+  const { data, error } = await supabase
+    .from('project_notes')
+    .insert({ project_id: projectId, content: clean })
+    .select('id, project_id, content, created_at')
+    .single();
+  if (error) throw friendlySupabaseError(error, 'Não consegui salvar a anotação.');
+  return noteOf(data);
+}
+
+export async function deleteNote(id: string): Promise<void> {
+  const supabase = requireSupabase();
+  const { error } = await supabase.from('project_notes').delete().eq('id', id);
+  if (error) throw friendlySupabaseError(error, 'Não consegui excluir a anotação.');
 }

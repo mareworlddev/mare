@@ -120,6 +120,8 @@ No SQL Editor do seu projeto, rode as migrações nesta ordem:
 | 1 | `supabase/migrations/0001_tables.sql` | Tabelas `projects`, `tasks`, `chats` e `messages` |
 | 2 | `supabase/migrations/0002_security.sql` | RLS, políticas, grants e rate limit por usuário |
 | 3 | `supabase/migrations/0003_storage.sql` | Bucket privado `mare-state` para sincronia entre abas |
+| 4 | `supabase/migrations/0004_notes.sql` | Notas/lembres por projeto (`project_notes`) |
+| 5 | `supabase/migrations/0005_pgvector.sql` | `mare_vector_memory` + `match_mare_vectors`: cache semântico e roteamento de skills |
 
 As migrações são idempotentes. Depois disso, ative o provider Google em Supabase Auth
 e cadastre as URLs de callback. O guia completo está em `supabase/README.md`.
