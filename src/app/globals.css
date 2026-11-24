@@ -475,7 +475,7 @@ a {
   display: flex;
   align-items: center;
   gap: 11px;
-  padding: 20px 18px 14px;
+  padding: 20px 12px 14px;
 }
 
 .mare-ws-brand strong {
@@ -497,7 +497,7 @@ a {
   flex: 1 1 auto;
   min-height: 0;
   overflow-y: auto;
-  padding-inline: 10px;
+  padding-inline: 12px;
 }
 
 .mare-ws-sidebar-foot {
@@ -505,7 +505,7 @@ a {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 12px 16px 16px;
+  padding: 12px 12px 16px;
   border-top: 1px solid rgba(0, 14, 84, 0.08);
 }
 
@@ -1700,8 +1700,8 @@ a {
 }
 
 .mare-ws-sidebar-close {
-  margin-left: auto;
   place-items: center;
+  flex: none;
   width: 30px;
   height: 30px;
   border: 1px solid rgba(0, 14, 84, 0.14);
@@ -1780,10 +1780,10 @@ a {
   }
 
   .mare-ws-composer-wrap {
-    padding-inline: 12px;
+    padding-inline: 14px;
   }
 
-  /* No mobile o respiro lateral do thread (14px) cobre o do composer (12px);
+  /* No mobile o respiro lateral do thread (14px) cobre o do composer (14px);
      o estado vazio volta a seguir a largura do thread, alinhado com o campo. */
   .mare-ws-empty {
     width: 100%;
@@ -2671,7 +2671,7 @@ a {
 .mare-ws-projects {
   flex: none;
   min-height: 0;
-  padding: 0 8px 10px;
+  padding: 0 12px 10px;
   border-bottom: 1px solid rgba(0, 14, 84, 0.08);
 }
 

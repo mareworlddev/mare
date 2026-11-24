@@ -21,7 +21,6 @@ import {
   Sparkles,
   User,
   Binary,
-  X,
   Image as ImageIcon,
 } from 'lucide-react';
 
@@ -700,10 +699,17 @@ export default function MareWorkspace() {
   }, [send]);
 
   const handleStarter = useCallback((starter: Starter) => {
+    // O atalho escolhe a skill: ela vira chip no compositor, nunca texto
+    // "/pesquisar" dentro do campo (o chip já carrega nome e o botão de fechar).
+    const picked = commands.find((item) => item.id === starter.id) ?? null;
+    if (picked) {
+      setCommand(picked);
+      setInput('');
+      return;
+    }
+    setCommand(null);
     setInput(starter.prompt);
-    const skill = MARE_SKILLS.find((item) => item.command === starter.prompt.replace(/^\/|\s$/g, '').trim())?.id;
-    setCommand(skill ? { id: skill, label: skill, hint: '', icon: iconFor(skill, 15) } : null);
-  }, []);
+  }, [commands]);
 
   const { startRunningSound, stopRunningSound } = sounds;
 
@@ -887,18 +893,18 @@ export default function MareWorkspace() {
         aria-label="Conversas, projetos e preferências"
       >
         <div className="mare-ws-brand">
-          <MareAvatar size={42} />
-          <div>
-            <strong>Mare</strong>
-          </div>
           <button
             type="button"
             className="mare-ws-sidebar-close"
             onClick={closeSidebar}
             aria-label="Fechar conversas e projetos"
           >
-            <X size={17} />
+            <Menu size={17} />
           </button>
+          <MareAvatar size={42} />
+          <div>
+            <strong>Mare</strong>
+          </div>
         </div>
 
         <div className="mare-ws-projects">
