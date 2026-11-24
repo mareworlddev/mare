@@ -99,11 +99,11 @@ export default function HomePage() {
       <section className="landing-hero" data-enter>
         <div className="landing-hero-dither" aria-hidden="true">
           <DitherField
-            pattern="glow"
+            pattern="landscape"
             color={['#dce9ff', '#87aeea', '#0553af']}
             dotSize={2}
-            intensity={0.55}
-            speed={0.5}
+            intensity={0.72}
+            speed={0.6}
             fps={24}
             interactive
             className="h-full w-full"
@@ -153,7 +153,7 @@ export default function HomePage() {
             <div className="landing-appframe-body">
               <div className="landing-appframe-dither" aria-hidden="true">
                 <DitherField
-                  pattern="clouds"
+                  pattern="waves"
                   color={['#e6efff', '#adc9f3', '#3b74c9']}
                   dotSize={2}
                   intensity={0.4}

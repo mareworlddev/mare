@@ -58,6 +58,20 @@ const PATTERNS = {
     float m = fbm(p / 80.0 - vec2(t * 0.02, 0.0));
     return smoothstep(0.28, 0.78, n) * (0.7 + 0.5 * m);
   `,
+  // A low sun to the right, slow ridges and haze: denser where the hero's
+  // preview sits, quieter behind the headline.
+  landscape: `
+    vec2 c = p - vec2(size.x * 0.74, size.y * 0.22);
+    float sun = exp(-length(c / vec2(size.x * 0.46, size.y * 0.55)) * 2.1);
+    float n = fbm(p / 240.0 + vec2(t * 0.018, -t * 0.012));
+    float ridge = sin(p.y / 66.0 + n * 4.2 + p.x / 430.0 - t * 0.14);
+    float band = smoothstep(0.1, 0.95, 0.5 + 0.5 * ridge);
+    float haze = fbm(vec2(p.x / 90.0 - t * 0.03, p.y / 640.0));
+    float light = sun * (0.5 + 0.7 * haze)
+      + band * 0.3 * smoothstep(0.0, 0.55, p.y / size.y)
+      + n * 0.24;
+    return light * (0.6 + 0.4 * smoothstep(0.02, 0.6, p.x / size.x));
+  `,
 } as const
 
 export type DitherPattern = keyof typeof PATTERNS

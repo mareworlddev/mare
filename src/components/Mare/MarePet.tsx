@@ -368,7 +368,6 @@ export function MarePet({ active, paused = false, celebrateKey, onFeed, onRear }
           type="button"
           className={`mare-pet-drop${dragOver ? ' is-over' : ''}`}
           aria-label={ariaLabel}
-          title={pos ? 'Arraste para mover · dois cliques voltam à barra' : 'Arraste a Mare para mover pela tela'}
           onPointerDown={onPointerDown}
           onClick={onDropClick}
         >
@@ -393,13 +392,11 @@ export function MarePet({ active, paused = false, celebrateKey, onFeed, onRear }
         />
       ) : null}
 
-      <p className="mare-pet-hint">
-        {selectedTreat
-          ? 'Agora clique na Mare para dar a ela'
-          : pos
-            ? 'Arraste a Mare para mover · dois cliques voltam à barra'
-            : 'Arraste a maçã ou a água até a Mare'}
-      </p>
+      {!pos || selectedTreat ? (
+        <p className="mare-pet-hint">
+          {selectedTreat ? 'Agora clique na Mare para dar a ela' : 'Arraste a maçã ou a água até a Mare'}
+        </p>
+      ) : null}
     </div>
   );
 

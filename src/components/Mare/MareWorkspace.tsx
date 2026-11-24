@@ -5,11 +5,12 @@ import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
+  ArrowLeft,
   BookOpen,
   CheckCircle2,
+  ChevronDown,
   Code2,
   FileText,
-  Home,
   Languages,
   ListChecks,
   LogOut,
@@ -299,6 +300,7 @@ export default function MareWorkspace() {
   const [toolsOpen, setToolsOpen] = useState(false);
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const [signOutOpen, setSignOutOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const [error, setError] = useState('');
   const [attachments, setAttachments] = useState<PendingAttachment[]>([]);
   const [projects, setProjects] = useState<MareProject[]>([]);
@@ -885,13 +887,16 @@ export default function MareWorkspace() {
     return () => window.removeEventListener('keydown', onKey);
   }, [sidebarOpen]);
   useEffect(() => {
-    if (!signOutOpen) return;
+    if (!signOutOpen && !accountOpen) return;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setSignOutOpen(false);
+      if (event.key === 'Escape') {
+        setSignOutOpen(false);
+        setAccountOpen(false);
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [signOutOpen]);
+  }, [signOutOpen, accountOpen]);
 
   const handleSignOut = useCallback(async () => {
     if (!isSupabaseConfigured()) return;
@@ -1089,20 +1094,6 @@ export default function MareWorkspace() {
           <button type="button" onClick={() => { closeSidebar(); setSettingsOpen((current) => !current); }} aria-expanded={settingsOpen}>
             <Settings2 size={15} /> Preferências
           </button>
-          {sessionUser ? (
-            <>
-              <span className="mare-ws-account" title={`${sessionUser.name} · ${sessionUser.email}`}>
-                {sessionUser.avatar ? <img src={sessionUser.avatar} alt="" /> : <User size={14} />}
-                <span>{sessionUser.email || sessionUser.name}</span>
-              </span>
-              <button type="button" onClick={() => setSignOutOpen(true)} aria-label="Sair da conta" title="Sair">
-                <LogOut size={15} />
-              </button>
-            </>
-          ) : null}
-          <Link href="/" title="Voltar à apresentação" aria-label="Voltar à apresentação">
-            <Home size={15} />
-          </Link>
         </div>
       </aside>
 
@@ -1119,6 +1110,14 @@ export default function MareWorkspace() {
             >
               <Menu size={17} />
             </button>
+            <Link
+              href="/"
+              className="mare-ws-home-back"
+              aria-label="Voltar à apresentação"
+              title="Voltar à apresentação"
+            >
+              <ArrowLeft size={18} />
+            </Link>
             <MareAvatar size={36} />
             <div>
               <h1>
@@ -1160,6 +1159,52 @@ export default function MareWorkspace() {
               {new Intl.NumberFormat('pt-BR', { notation: 'compact', maximumFractionDigits: 1 }).format(contextTokens.total)}
               <span className="mare-ws-context-label">tokens</span>
             </span>
+          ) : null}
+
+          {sessionUser ? (
+            <div className="mare-ws-account-wrap">
+              <button
+                type="button"
+                className="mare-ws-account-button"
+                onClick={() => setAccountOpen((value) => !value)}
+                aria-expanded={accountOpen}
+                aria-label="Informações da conta"
+                title={`${sessionUser.name} · ${sessionUser.email}`}
+              >
+                {sessionUser.avatar ? (
+                  <img src={sessionUser.avatar} alt="" />
+                ) : (
+                  <span className="mare-ws-account-fallback">{sessionUser.name.slice(0, 1).toUpperCase()}</span>
+                )}
+                <span className="mare-ws-account-name">{sessionUser.name}</span>
+                <ChevronDown size={12} aria-hidden="true" />
+              </button>
+              {accountOpen ? (
+                <div className="mare-ws-account-menu" role="dialog" aria-label="Informações da conta">
+                  <div className="mare-ws-account-who">
+                    {sessionUser.avatar ? (
+                      <img src={sessionUser.avatar} alt="" />
+                    ) : (
+                      <span className="mare-ws-account-fallback">{sessionUser.name.slice(0, 1).toUpperCase()}</span>
+                    )}
+                    <div>
+                      <strong>{sessionUser.name}</strong>
+                      <span>{sessionUser.email}</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="mare-ws-account-signout"
+                    onClick={() => {
+                      setAccountOpen(false);
+                      setSignOutOpen(true);
+                    }}
+                  >
+                    <LogOut size={14} aria-hidden="true" /> Sair da conta
+                  </button>
+                </div>
+              ) : null}
+            </div>
           ) : null}
         </header>
 
